@@ -5,7 +5,7 @@ class EntityMixin(object):
     schema = None
 
     def init(self):
-        self.__module = import_module("schema")
+        self.__module = import_module("muria.db.schema")
         sch = "_%s" % self.__class__.__name__
         # print(self.__module, sch, hasattr(self.__module, sch))
         if hasattr(self.__module, sch):
@@ -13,15 +13,15 @@ class EntityMixin(object):
             if not isinstance(self.schema, self.schematic):
                 self.schema = self.schematic()
 
-    @property
-    def as_dict(self):
+    def unload(self):
         """Return tuple of data and error if any."""
 
         self.init()
-        return self.schema.dump(self)
+        data, error = self.schema.dump(self)
+        return data
 
-    def validate(self, data):
-        """Validate given dict argument."""
+    def clean(self, data):
+        """Validate dict data and return tuple of data and error."""
 
         self.init()
-        return self.schema.validate(data)
+        return self.schema.load(data)

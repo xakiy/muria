@@ -19,7 +19,9 @@ db = connection = Database()
 
 
 class Bio(db.Entity, EntityMixin):
-    id = PrimaryKey(uuid.UUID, default=uuid.uuid4)
+    # We store uuid in string column instead of binary
+    # to simplify object instantiation and lookup
+    id = PrimaryKey(str, 36, default=uuid.uuid4)
     nama = Required(str)
     jinshi = Optional(str, 1)
     tempat_lahir = Optional(str, 60)
@@ -29,7 +31,7 @@ class Bio(db.Entity, EntityMixin):
 
 
 class User(db.Entity, EntityMixin):
-    id = PrimaryKey(uuid.UUID, default=uuid.uuid4)
+    id = PrimaryKey(str, 36, default=uuid.uuid4)
     profile = Required(Bio)
     username = Required(str, 40, unique=True)
     email = Required(str, 60, unique=True)

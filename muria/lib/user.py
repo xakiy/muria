@@ -1,10 +1,17 @@
 """User Authentication Factory."""
 
-import falcon
-from muria.db.schema import _Credentials
 from muria.db.model import User
-from muria.lib.tokenizer import TokenBasic, TokenJWT, InvalidTokenError
+from muria.db.schema import _Credentials
 from pony.orm import db_session
+from muria.lib.tokenizer import (
+    TokenBasic,
+    TokenJWT,
+    InvalidTokenError
+)
+from falcon import (
+    HTTPUnprocessableEntity,
+    HTTPUnauthorized
+)
 
 
 class UserAuthentication(object):
@@ -26,7 +33,7 @@ class UserAuthentication(object):
         payload = {"username": username, "password": password}
         data, errors = self._login_schema.load(payload)
         if errors:
-            raise falcon.HTTPUnprocessableEntity(
+            raise HTTPUnprocessableEntity(
                 code=88810,  # unprocessable creds either blank or invalid
                 title="Authentication Failure",
                 description=str(errors)
@@ -36,7 +43,7 @@ class UserAuthentication(object):
             payload = self.tokenizer.create_payload(user.username)
             return self.tokenizer.create_token(payload, user.username)
         else:
-            raise falcon.HTTPUnauthorized(
+            raise HTTPUnauthorized(
                 code=88811,  # credentials received but invalid
                 title="Authentication Failure",
                 description="Invalid credentials"
@@ -54,12 +61,12 @@ class UserAuthentication(object):
             try:
                 return self._tokenizers[i].verify_token(token)
             except InvalidTokenError as error:
-                raise falcon.HTTPUnauthorized(
+                raise HTTPUnauthorized(
                     code=error.code,
                     title="Token Verification",
                     description=error.status
                 )
-        raise falcon.HTTPUnauthorized(
+        raise HTTPUnauthorized(
             code=error_code,
             title="Token Verification",
             description="Invalid token, lol!"
@@ -80,12 +87,12 @@ class UserAuthentication(object):
                     access_token, refresh_token
                 )
             except InvalidTokenError as error:
-                raise falcon.HTTPUnauthorized(
+                raise HTTPUnauthorized(
                     code=error.code,
                     title="Token Verification",
                     description=error.status
                 )
-        raise falcon.HTTPUnauthorized(
+        raise HTTPUnauthorized(
             code=error_code,
             title="Token Verification",
             description="Invalid token, lol!"
