@@ -12,7 +12,9 @@ $git clone https://github.com/xakiy/muria.git
 
 Install package dependensinya
 - kalau perlu buat environment, bisa dengan virtualenv, atau pyenv
-- pip install -r requirement-devel.txt
+```
+$pip install -r requirement-devel.txt
+```
 
 Sebelum itu Anda akan perlu meng-export env MURIA_SETUP seperti:
  
