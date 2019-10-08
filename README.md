@@ -1,7 +1,7 @@
 Muria
 =====
 
-Falcon boilerplate for API development
+Falcon boilerplate for API development with pony ORM
 
 Instalasi
 ---------
