@@ -19,7 +19,7 @@ $pip install -r requirement-devel.txt
 Sebelum itu Anda akan perlu meng-export env MURIA_SETUP seperti:
  
 ```
-  $export MURIA_SETUP=/home/linux_user/config/muria.ini
+$export MURIA_SETUP=/home/linux_user/config/muria.ini
 ```
 
 Dan Anda bisa menyiapkannya dengan cara:
