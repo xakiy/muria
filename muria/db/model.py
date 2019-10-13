@@ -54,14 +54,14 @@ class User(db.Entity, EntityMixin):
         return hashed_bin_key.hex()
 
     @classmethod
-    def create_salted_password(self, password):
+    def create_salted_password(cls, password):
         """Create new password based on supplied digest.
         Args:
             password_string: plain string.
         Return tuple of hex version of the salt and the password.
         """
         salt_bin = urandom(20)
-        return salt_bin.hex(), self.hash_password(password, salt_bin)
+        return salt_bin.hex(), cls.hash_password(password, salt_bin)
 
     def check_password(self, password):
         salt_bin = binascii.unhexlify(self.salt)
