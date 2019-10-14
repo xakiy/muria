@@ -32,7 +32,7 @@ class Profile():
             protocol=self.protocol
         )
 
-        # should got NOT_FOUND
+        # should get NOT_FOUND
         assert resp.status == HTTP_NOT_FOUND
 
         # with invalid uuid
@@ -44,7 +44,7 @@ class Profile():
             query_string=query
         )
 
-        # should got NOT_FOUND
+        # should get NOT_FOUND
         assert resp.status == HTTP_NOT_FOUND
 
         # with non-existent uuid
@@ -56,7 +56,7 @@ class Profile():
             query_string=query
         )
 
-        # should got NOT_FOUND
+        # should get NOT_FOUND
         assert resp.status == HTTP_NOT_FOUND
 
         # with correct uuid

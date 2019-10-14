@@ -1,4 +1,4 @@
-"""Profile."""
+"""Profile Resource."""
 
 from . import Resource
 from muria.db import Bio

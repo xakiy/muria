@@ -11,8 +11,8 @@ accordingly.
 ### Requirement Checklist
 Date: 2019-10-14
 ---
-- [ ] Simple Token Auth
-- [ ] Tests
+- [x] Simple Auth Token
+- [x] Tests
 ---
 Date: 2019-10-06
 ---
