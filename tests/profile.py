@@ -1,4 +1,4 @@
-"""Testing Account Resource."""
+"""Profile Resource Test."""
 
 import uuid
 from pony.orm import db_session
