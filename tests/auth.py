@@ -33,7 +33,7 @@ class Auth(object):
         if DEBUG:
             assert resp.json == {"WWW-Authenticate": "Bearer"}
 
-    def post_invalid_credentials(self, client):
+    def test_post_invalid_credentials(self, client):
 
         url = "/v1/auth"
 
@@ -95,7 +95,7 @@ class Auth(object):
         assert resp.status == HTTP_UNAUTHORIZED
         assert resp.json.get("code") == 88811
 
-    def post_login_and_get_tokens(self, client, request):
+    def test_post_valid_credentials(self, client, request):
 
         url = "/v1/auth"
 
@@ -132,7 +132,7 @@ class Auth(object):
         # should pass
         assert access_token == user_authentication.check_token(access_token)
 
-    def auth_post_verify_token(self, client, request):
+    def test_post_verify_access_token(self, client, request):
         # Veriy token whether it is valid or not
 
         # get cached token from previous login
@@ -174,7 +174,7 @@ class Auth(object):
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
 
-    def auth_post_refresh_token(self, client, request):
+    def test_post_refresh_tokens(self, client, request):
 
         cached_access_token = request.config.cache.get("access_token", None)
         cached_refresh_token = request.config.cache.get("refresh_token", None)
