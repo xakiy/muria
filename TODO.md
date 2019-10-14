@@ -10,7 +10,6 @@ accordingly.
 
 ### Requirement Checklist
 Date: 2019-10-06
-
 ---
 
 - [x] Bio Entity      
