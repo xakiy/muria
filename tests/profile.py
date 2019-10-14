@@ -3,7 +3,8 @@
 import uuid
 from pony.orm import db_session
 from muria.init import config
-from muria.lib.misc import generate_chars, dumpAsJSON
+from muria.util.misc import generate_chars
+from muria.util.json import dumpAsJSON
 from falcon import (
     HTTP_OK,
     HTTP_NOT_FOUND,

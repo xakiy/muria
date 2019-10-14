@@ -7,7 +7,7 @@ from calendar import timegm
 from muria.db.model import User, BasicToken
 from pony.orm import db_session
 from strgen import StringGenerator as _generator
-from muria.lib.error import (
+from muria.common.error import (
     InvalidTokenError,
     TokenExpiredError,
     TokenRevokedError,

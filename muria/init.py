@@ -1,10 +1,10 @@
 """Bootstraping stuff."""
 
-from muria.lib.config import Parser
-from muria.db.setup import setup_database
+from muria.util.setting import Parser
+from muria.db.manager import setup_database
 
-from muria.lib.user import UserAuthentication
-from muria.lib.logger import Logger
+from muria.util.user import UserAuthentication
+from muria.util.logger import Logger
 
 
 # MURIA_SETUP merupakan env yang menunjuk ke berkas

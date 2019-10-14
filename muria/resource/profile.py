@@ -3,7 +3,7 @@
 from . import Resource
 from muria.db import Bio
 from pony.orm import db_session, flush
-from muria.lib.misc import is_uuid
+from muria.util.misc import is_uuid
 from falcon import (
     HTTPNotFound,
     HTTP_OK,

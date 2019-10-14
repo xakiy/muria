@@ -3,7 +3,7 @@
 from muria.db.model import User
 from muria.db.schema import _Credentials
 from pony.orm import db_session
-from muria.lib.tokenizer import (
+from muria.util.tokenizer import (
     TokenBasic,
     TokenJWT,
     InvalidTokenError

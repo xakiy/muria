@@ -73,9 +73,6 @@ def setup_database(config, conection=connection):
     else:
         connection.bind(**params)
 
-    # config.add_section('db')
-    # config.read_dict({'db': params})
-
     sql_debug(config.getboolean("database", "verbose"))
     connection.generate_mapping(
         create_tables=config.getboolean("database", "create_table")

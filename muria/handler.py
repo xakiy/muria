@@ -1,5 +1,5 @@
-from muria.lib.form import FormHandler
-from muria.lib.json import JSONHandler
+from muria.util.form import FormHandler
+from muria.util.json import JSONHandler
 
 extra_handlers = {
     "application/json": JSONHandler,
