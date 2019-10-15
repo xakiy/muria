@@ -1,10 +1,13 @@
 """User Resource."""
 
 from . import Resource
-import falcon
 from muria.init import user_authentication, DEBUG
 from muria.common.error import InvalidTokenError
 from pony.orm import db_session
+from falcon import (
+    HTTP_OK,
+    HTTPBadRequest
+)
 
 
 class Authentication(Resource):
@@ -17,19 +20,22 @@ class Authentication(Resource):
     @db_session
     def on_get(self, req, resp):
 
-        resp.status = falcon.HTTP_OK
+        resp.status = HTTP_OK
         resp.set_header("WWW-Authenticate", "Bearer")
         if DEBUG:
             resp.media = {"WWW-Authenticate": "Bearer"}
 
     @db_session
     def on_post(self, req, resp):
-        token = user_authentication.authenticate_user(
-            username=req.media.get("username", ""),
-            password=req.media.get("password", "")
-        )
-        resp.status = falcon.HTTP_OK
-        resp.media = token
+        if req.media:
+            token = user_authentication.authenticate_user(
+                username=req.media.get("username", ""),
+                password=req.media.get("password", "")
+            )
+            resp.status = HTTP_OK
+            resp.media = token
+        else:
+            raise HTTPBadRequest()
 
 
 class Verification(Resource):
@@ -47,10 +53,10 @@ class Verification(Resource):
                 req.media.get("access_token")
             )
             content = {"access_token": token}
-            resp.status = falcon.HTTP_200
+            resp.status = HTTP_OK
             resp.media = content
         except InvalidTokenError as error:
-            raise falcon.HTTP_BAD_REQUEST(
+            raise HTTPBadRequest(
                 code=error.code,
                 description=str(error.status)
             )
@@ -63,4 +69,4 @@ class Refresh(Resource):
         resp.media = user_authentication.refresh_token(
             access_token, refresh_token
         )
-        resp.status = falcon.HTTP_OK
+        resp.status = HTTP_OK

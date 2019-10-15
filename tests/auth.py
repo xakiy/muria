@@ -1,7 +1,8 @@
 """Authentication Test."""
 
 from muria.init import config, DEBUG, user_authentication
-from muria.util.json import dumpAsJSON
+# from muria.util.json import dumpAsJSON
+from urllib import parse
 from muria.util.misc import generate_chars
 from falcon import (
     HTTP_UNPROCESSABLE_ENTITY,
@@ -17,7 +18,6 @@ class Auth(object):
         url = "/v1/auth"
 
         headers = {
-            "Content-Type": "application/json",
             "Host": config.get("security", "issuer"),
             "Origin": config.get("security", "audience"),
         }
@@ -38,7 +38,6 @@ class Auth(object):
         url = "/v1/auth"
 
         headers = {
-            "Content-Type": "application/json",
             "Host": config.get("security", "issuer"),
             "Origin": config.get("security", "audience"),
         }
@@ -51,7 +50,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(credentials),
+            json=credentials,
             headers=headers,
             protocol=self.protocol,
         )
@@ -69,7 +68,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(credentials),
+            json=credentials,
             headers=headers,
             protocol=self.protocol,
         )
@@ -86,7 +85,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(credentials),
+            json=credentials,
             headers=headers,
             protocol=self.protocol,
         )
@@ -100,7 +99,6 @@ class Auth(object):
         url = "/v1/auth"
 
         headers = {
-            "Content-Type": "application/json",
             "Host": config.get("security", "issuer"),
             "Origin": config.get("security", "audience"),
         }
@@ -113,7 +111,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(credentials),
+            json=credentials,
             headers=headers,
             protocol=self.protocol,
         )
@@ -129,6 +127,29 @@ class Auth(object):
         request.config.cache.set("access_token", access_token)
         request.config.cache.set("refresh_token", refresh_token)
 
+        # post as www-url-encoded content
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Host": config.get("security", "issuer"),
+            "Origin": config.get("security", "audience"),
+        }
+
+        # login with valid credentials
+        credentials = {
+            "username": self.user.username,
+            "password": self.password_string,
+        }
+
+        resp = client.simulate_post(
+            path=url,
+            body=parse.urlencode(credentials),
+            headers=headers,
+            protocol=self.protocol,
+        )
+
+        # should get OK
+        assert resp.status == HTTP_OK
+
         # should pass
         assert access_token == user_authentication.check_token(access_token)
 
@@ -141,7 +162,6 @@ class Auth(object):
         url = "/v1/auth/verify"
 
         headers = {
-            "Content-Type": "application/json",
             "Host": config.get("security", "issuer"),
             "Origin": config.get("security", "audience"),
         }
@@ -150,12 +170,12 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(payload),
+            json=payload,
             headers=headers,
             protocol=self.protocol,
         )
 
-        # should get OK and the exact as cached token
+        # should get OK and get token as cached one
         assert resp.status == HTTP_OK
         assert resp.json.get("access_token") == access_token
 
@@ -166,7 +186,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             "/v1/auth/verify",
-            body=dumpAsJSON(payload),
+            json=payload,
             headers=headers,
             protocol=self.protocol,
         )
@@ -195,7 +215,7 @@ class Auth(object):
 
         resp = client.simulate_post(
             path=url,
-            body=dumpAsJSON(payload),
+            json=payload,
             headers=headers,
             protocol=self.protocol,
         )
@@ -207,3 +227,35 @@ class Auth(object):
         assert resp.status == HTTP_OK
         assert new_access_token != cached_access_token
         assert new_refresh_token != cached_refresh_token
+
+        # tamper that cached access token
+        payload = {
+            "access_token": cached_access_token[:2] + generate_chars(2),
+            "refresh_token": cached_refresh_token
+        }
+
+        resp = client.simulate_post(
+            path=url,
+            json=payload,
+            headers=headers,
+            protocol=self.protocol,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
+
+        # tamper that cached refresh token
+        payload = {
+            "access_token": cached_access_token,
+            "refresh_token": cached_refresh_token[:2] + generate_chars(2)
+        }
+
+        resp = client.simulate_post(
+            path=url,
+            json=payload,
+            headers=headers,
+            protocol=self.protocol,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED

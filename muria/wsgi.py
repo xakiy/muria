@@ -20,11 +20,13 @@ if DEBUG:
 
 app = application = API(middleware=middleware_list)
 
-app.req_options.media_handlers.update(extra_handlers)
-app.resp_options.media_handlers.update(extra_handlers)
-
-app.req_options.auto_parse_form_urlencoded = False
-# Set to False to make sure falcon will not convert form entries as params
+if not app.req_options.auto_parse_form_urlencoded:
+    # form data can be accessed via req.media
+    app.req_options.media_handlers.update(extra_handlers)
+    app.resp_options.media_handlers.update(extra_handlers)
+else:
+    # otherwise via req.params
+    app.req_options.auto_parse_form_urlencoded = True
 
 for (path, url) in static_route:
     app.add_static_route(path, url)
