@@ -14,14 +14,15 @@ class EntityMixin(object):
                 self.schema = self.schematic()
 
     def unload(self):
-        """Return tuple of data and error if any."""
+        """Return serialized data or raise error."""
 
         self.init()
-        data, error = self.schema.dump(self)
-        return data
+        return self.schema.dump(self)
 
     def clean(self, data):
-        """Validate dict data and return tuple of data and error."""
+        """Return deserialized data or raise error."""
+        # NOTE: to prevent method naming collision from pony entity
+        #       we name it 'clean' instead of 'load'.
 
         self.init()
         return self.schema.load(data)

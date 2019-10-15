@@ -17,9 +17,9 @@ from falcon import (
 class UserAuthentication(object):
     """Authenticate user based on username and password."""
 
-    def __init__(self, config, login_schema=_Credentials):
+    def __init__(self, config):
 
-        self._login_schema = login_schema()
+        self.login_schema = _Credentials()
         token_basic = TokenBasic(config)
         token_jwt = TokenJWT(config)
         self._tokenizers = {'basic': token_basic, 'jwt': token_jwt}
@@ -30,16 +30,16 @@ class UserAuthentication(object):
         """Authenticate user with their username and password."""
 
         self.tokenizer = self._tokenizers.get(token_type)
-        payload = {"username": username, "password": password}
-        data, errors = self._login_schema.load(payload)
+        credentials = {"username": username, "password": password}
+        errors = self.login_schema.validate(credentials)
         if errors:
             raise HTTPUnprocessableEntity(
                 code=88810,  # unprocessable creds either blank or invalid
                 title="Authentication Failure",
                 description=str(errors)
             )
-        user = User.get(username=data["username"])
-        if user and user.check_password(data["password"]):
+        user = User.get(username=credentials["username"])
+        if user and user.check_password(credentials["password"]):
             payload = self.tokenizer.create_payload(user.username)
             return self.tokenizer.create_token(payload, user.username)
         else:
@@ -51,49 +51,42 @@ class UserAuthentication(object):
 
     @db_session
     def check_token(self, token):
-        error_code = None
+        access_token = None
+        failure = None
         for i in self._tokenizers:
             try:
-                self._tokenizers[i].is_token(token)
-            except InvalidTokenError as failure:
-                error_code = failure.code
-                continue
-            try:
-                return self._tokenizers[i].verify_token(token)
+                access_token = self._tokenizers[i].verify_token(token)
             except InvalidTokenError as error:
-                raise HTTPUnauthorized(
-                    code=error.code,
-                    title="Token Verification",
-                    description=error.status
-                )
-        raise HTTPUnauthorized(
-            code=error_code,
-            title="Token Verification",
-            description="Invalid token, lol!"
-        )
+                failure = error
+                continue
+
+        if access_token:
+            return access_token
+        else:
+            raise HTTPUnauthorized(
+                code=failure.code,
+                title="Token Verification",
+                description=failure.status
+            )
 
     @db_session
     def refresh_token(self, access_token, refresh_token):
-        error_code = None
+        refreshed_tokens = None
+        failure = None
         for i in self._tokenizers:
             try:
-                self._tokenizers[i].is_token(access_token)
-            except InvalidTokenError as failure:
-                error_code = failure.code
-                continue
-            try:
-                print('refreshing token...')
-                return self._tokenizers[i].refresh_token(
+                refreshed_tokens = self._tokenizers[i].refresh_token(
                     access_token, refresh_token
                 )
             except InvalidTokenError as error:
-                raise HTTPUnauthorized(
-                    code=error.code,
-                    title="Token Verification",
-                    description=error.status
-                )
-        raise HTTPUnauthorized(
-            code=error_code,
-            title="Token Verification",
-            description="Invalid token, lol!"
-        )
+                failure = error
+                continue
+
+        if refreshed_tokens:
+            return refreshed_tokens
+        else:
+            raise HTTPUnauthorized(
+                code=failure.code,
+                title="Token Verification",
+                description=failure.status
+            )

@@ -9,6 +9,7 @@ from falcon import (
     HTTP_OK,
     HTTPUnprocessableEntity
 )
+from marshmallow import ValidationError
 
 
 class Profile(Resource):
@@ -33,11 +34,12 @@ class Profile(Resource):
 
             profile = Bio.get(id=id)
             # validate submitted data
-            update, error = profile.clean(req.media)
-            if error:
+            try:
+                update = profile.clean(req.media)
+            except ValidationError as error:
                 raise HTTPUnprocessableEntity(
                     title="Profile Update Error",
-                    description={"data": req.media, "error": error}
+                    description={"error": error.messages}
                 )
 
             profile.set(**update)

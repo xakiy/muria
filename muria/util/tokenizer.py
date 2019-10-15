@@ -26,15 +26,25 @@ class BaseToken(object):
         pass
 
     def create_token(self, payload, username):
+        """Create pair of access_token and refresh_token along with
+           their expire time.
+        """
         raise NotImplementedError()
 
     def verify_token(self, token):
+        """If validated return the exact same token, otherwise raise error."""
         raise NotImplementedError()
 
     def refresh_token(self, access_token, refresh_token):
+        """Validate access_token and refresh_token pair
+           and renew them if validated.
+        """
         raise NotImplementedError()
 
     def is_token(self, token):
+        """String based token check.
+           Retrun True on valid otherwise False.
+        """
         raise NotImplementedError()
 
 
@@ -79,7 +89,8 @@ class TokenBasic(BaseToken):
     def verify_token(self, token, allow_expired=False):
         """Verify given token and return it if it's valid."""
 
-        self.is_token(token)
+        if not self.is_token(token):
+            raise InvalidTokenError()
 
         basic_token = BasicToken.get(
             access_token=token,
@@ -100,7 +111,9 @@ class TokenBasic(BaseToken):
         return basic_token.access_token
 
     def refresh_token(self, access_token, refresh_token):
-        self.is_token(access_token)
+
+        if not self.is_token(access_token):
+            raise InvalidTokenError()
 
         old_token = BasicToken.get(
             access_token=access_token,
@@ -129,9 +142,7 @@ class TokenBasic(BaseToken):
 
     def is_token(self, token):
         length = len(token) == self.token_basic_length
-        if length and token.isidentifier():
-            return True
-        raise InvalidTokenError()
+        return True if length and token.isidentifier() else False
 
 
 class TokenJWT(BaseToken):
@@ -216,7 +227,9 @@ class TokenJWT(BaseToken):
         return content
 
     def verify_token(self, access_token):
-        self.is_token(access_token)
+
+        if not self.is_token(access_token):
+            raise InvalidTokenError()
 
         try:
             jwt.decode(
@@ -237,7 +250,8 @@ class TokenJWT(BaseToken):
         # access token and refresh token, otherwise it
         # will return tuple of error code
 
-        self.is_token(access_token)
+        if not self.is_token(access_token):
+            raise InvalidTokenError()
 
         acc_token_sig = access_token.split(".")[2]
         try:
@@ -268,6 +282,5 @@ class TokenJWT(BaseToken):
         return self.create_token(token_payload)
 
     def is_token(self, token):
-        if isinstance(token, str) and token.count(".") == 2:
-            return True
-        raise InvalidTokenError()
+        return True if isinstance(token, str) and token.count(".") == 2 \
+            else False
