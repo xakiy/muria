@@ -56,6 +56,7 @@ class UserAuthentication(object):
         for i in self._tokenizers:
             try:
                 access_token = self._tokenizers[i].verify_token(token)
+                break
             except InvalidTokenError as error:
                 failure = error
                 continue
@@ -78,6 +79,7 @@ class UserAuthentication(object):
                 refreshed_tokens = self._tokenizers[i].refresh_token(
                     access_token, refresh_token
                 )
+                break
             except InvalidTokenError as error:
                 failure = error
                 continue

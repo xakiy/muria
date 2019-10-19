@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from calendar import timegm
 from muria.db.model import User, BasicToken
 from pony.orm import db_session
-from strgen import StringGenerator as _generator
+from muria.util.misc import generate_chars as _generator
 from muria.common.error import (
     InvalidTokenError,
     TokenExpiredError,
@@ -65,9 +65,7 @@ class TokenBasic(BaseToken):
     def _generate_token(self, digit=0):
         length = digit if digit > 0 else \
             self.token_basic_length
-        # strgen '\w' is equivalent with identifier in str
-        template = '[\\w]{' + str(length) + '}'
-        return _generator(template).render()
+        return _generator(length)
 
     @db_session
     def create_token(self, payload, username):
@@ -141,8 +139,7 @@ class TokenBasic(BaseToken):
         return new_token
 
     def is_token(self, token):
-        length = len(token) == self.token_basic_length
-        return True if length and token.isidentifier() else False
+        return len(token) == self.token_basic_length
 
 
 class TokenJWT(BaseToken):
@@ -282,5 +279,4 @@ class TokenJWT(BaseToken):
         return self.create_token(token_payload)
 
     def is_token(self, token):
-        return True if isinstance(token, str) and token.count(".") == 2 \
-            else False
+        return isinstance(token, str) and token.count(".") == 2
