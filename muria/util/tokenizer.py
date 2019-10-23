@@ -139,7 +139,7 @@ class TokenBasic(BaseToken):
         return new_token
 
     def is_token(self, token):
-        return isinstance(token, str) and len(token) == self.token_basic_length
+        return len(token) == self.token_basic_length
 
 
 class TokenJWT(BaseToken):

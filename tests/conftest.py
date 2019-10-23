@@ -2,6 +2,7 @@
 
 import pytest
 from falcon import testing
+from muria.init import config
 from tests import config_file  # initiating env setup
 from muria.wsgi import app
 from muria.db.model import Bio, User
@@ -15,9 +16,17 @@ def client():
 
 @pytest.fixture(scope="class", autouse=True)
 @db_session
-def default_user(request):
+def properties(request):
 
-    user_profile = {
+    request.cls.scheme = "https"
+
+    headers = {
+        "Host": config.get("security", "issuer"),
+        "Origin": config.get("security", "audience"),
+    }
+    request.cls.headers = headers
+
+    profile_data = {
         "id": "7b8bccaa-5f6f-4ac0-a469-432799c12549",
         "nama": "Rijalul Ghad",
         "jinshi": "l",
@@ -26,10 +35,8 @@ def default_user(request):
         "tanggal_masuk": "2019-08-12",
     }
 
-    request.cls.protocol = "https"
-
-    request.cls.user_profile = Bio.get(id=user_profile["id"]) \
-        if Bio.exists(id=user_profile["id"]) else Bio(**user_profile)
+    request.cls.profile = Bio.get(id=profile_data["id"]) \
+        if Bio.exists(id=profile_data["id"]) else Bio(**profile_data)
 
     password_string = "supersecret"
     hashed, salt = (
@@ -37,9 +44,9 @@ def default_user(request):
         '56d7a4c162c754262f90f345ac67c1841c715b3c'
     )
 
-    user = {
+    user_data = {
         "id": "ed05547a-a6be-436f-9f8b-946dee956191",
-        "profile": request.cls.user_profile,
+        "profile": request.cls.profile,
         "username": "rijalul.ghad",
         "email": "rijalul.ghad@gmail.com",
         "password": hashed,
@@ -47,7 +54,7 @@ def default_user(request):
         "suspended": False,
     }
 
-    request.cls.user = User.get(id=user["id"]) \
-        if User.exists(id=user["id"]) else User(**user)
+    request.cls.user = User.get(id=user_data["id"]) \
+        if User.exists(id=user_data["id"]) else User(**user_data)
 
     request.cls.password_string = password_string
