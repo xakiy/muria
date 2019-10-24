@@ -1,5 +1,6 @@
 """Authentication Test."""
 
+import pytest
 from muria.init import config, DEBUG, user_authentication
 # from muria.util.json import dumpAsJSON
 from urllib import parse
@@ -11,21 +12,20 @@ from falcon import (
 )
 
 
-class Auth(object):
+@pytest.fixture(scope="class")
+def url(request):
+    request.cls.url = "/v1/auth"
+
+
+@pytest.mark.usefixtures("client", "url", "properties")
+class TestAuth:
 
     def test_get_auth(self, client):
 
-        url = "/v1/auth"
-
-        headers = {
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
-
         resp = client.simulate_get(
-            path=url,
-            headers=headers,
-            protocol=self.protocol
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme
         )
 
         assert resp.status == HTTP_OK
@@ -33,15 +33,7 @@ class Auth(object):
         if DEBUG:
             assert resp.json == {"WWW-Authenticate": "Bearer"}
 
-    def test_post_invalid_credentials(self, client):
-
-        url = "/v1/auth"
-
-        headers = {
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
-
+    def test_post_shorted_password(self, client):
         # test with short password, less than 8 characters
         credentials = {
             "username": self.user.username,
@@ -49,10 +41,10 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url,
             json=credentials,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNPROCESSABLE_ENTITY
@@ -60,6 +52,7 @@ class Auth(object):
         assert resp.json.get("description") == \
             "{'password': ['Length must be between 8 and 40.']}"
 
+    def test_post_scrambled_password(self, client):
         # test with scrambled password with exact same length
         credentials = {
             "username": self.user.username,
@@ -67,16 +60,17 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url,
             json=credentials,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
         assert resp.json.get("code") == 88811  # creds received but invalid
 
+    def test_post_scrambled_username_and_password(self, client):
         # test with both scrambled username and password
         credentials = {
             "username": self.user.username[:-2] + generate_chars(2),
@@ -84,10 +78,10 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url,
             json=credentials,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNAUTHORIZED
@@ -96,13 +90,6 @@ class Auth(object):
 
     def test_post_valid_credentials(self, client, request):
 
-        url = "/v1/auth"
-
-        headers = {
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
-
         # login with valid credentials
         credentials = {
             "username": self.user.username,
@@ -110,16 +97,16 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url,
             json=credentials,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get OK
         assert resp.status == HTTP_OK
 
-        # and getting tokens
+        # and get those tokens
         access_token = resp.json.get("access_token")
         refresh_token = resp.json.get("refresh_token")
 
@@ -127,12 +114,12 @@ class Auth(object):
         request.config.cache.set("access_token", access_token)
         request.config.cache.set("refresh_token", refresh_token)
 
+    def test_post_valid_credentials_as_form_urlencoded(self, client, request):
         # post as www-url-encoded content
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
+        headers = self.headers
+        headers.update(
+            {"Content-Type": "application/x-www-form-urlencoded"}
+        )
 
         # login with valid credentials
         credentials = {
@@ -141,11 +128,13 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url,
             body=parse.urlencode(credentials),
             headers=headers,
-            protocol=self.protocol,
+            protocol=self.scheme,
         )
+
+        access_token = resp.json.get("access_token")
 
         # should get OK
         assert resp.status == HTTP_OK
@@ -153,31 +142,29 @@ class Auth(object):
         # should pass
         assert access_token == user_authentication.check_token(access_token)
 
-    def test_post_verify_access_token(self, client, request):
+    def test_post_verify_valid_access_token(self, client, request):
         # Veriy token whether it is valid or not
 
         # get cached token from previous login
         access_token = request.config.cache.get("access_token", None)
 
-        url = "/v1/auth/verify"
-
-        headers = {
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
-
         payload = {"access_token": access_token}
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url + "/verify",
             json=payload,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get OK and get token as cached one
         assert resp.status == HTTP_OK
         assert resp.json.get("access_token") == access_token
+
+    def test_post_varify_tampered_access_token(self, client, request):
+
+        # get cached token from previous login
+        access_token = request.config.cache.get("access_token", None)
 
         # tamper the token
         broken_token = access_token[:-2]
@@ -185,27 +172,19 @@ class Auth(object):
         payload = {"access_token": broken_token}
 
         resp = client.simulate_post(
-            "/v1/auth/verify",
+            path=self.url + "/verify",
             json=payload,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
 
-    def test_post_refresh_tokens(self, client, request):
+    def test_post_refresh_valid_token_pair(self, client, request):
 
         cached_access_token = request.config.cache.get("access_token", None)
         cached_refresh_token = request.config.cache.get("refresh_token", None)
-
-        url = "/v1/auth/refresh"
-
-        headers = {
-            "Content-Type": "application/json",
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience"),
-        }
 
         # renew that cached tokens
         payload = {
@@ -214,10 +193,10 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url + "/refresh",
             json=payload,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         new_access_token = resp.json.get("access_token")
@@ -228,6 +207,11 @@ class Auth(object):
         assert new_access_token != cached_access_token
         assert new_refresh_token != cached_refresh_token
 
+    def test_post_refresh_tampered_access_token(self, client, request):
+
+        cached_access_token = request.config.cache.get("access_token", None)
+        cached_refresh_token = request.config.cache.get("refresh_token", None)
+
         # tamper that cached access token
         payload = {
             "access_token": cached_access_token[:2] + generate_chars(2),
@@ -235,14 +219,19 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url + "/refresh",
             json=payload,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
+
+    def test_post_refresh_tampered_refresh_token(self, client, request):
+
+        cached_access_token = request.config.cache.get("access_token", None)
+        cached_refresh_token = request.config.cache.get("refresh_token", None)
 
         # tamper that cached refresh token
         payload = {
@@ -251,10 +240,10 @@ class Auth(object):
         }
 
         resp = client.simulate_post(
-            path=url,
+            path=self.url + "/refresh",
             json=payload,
-            headers=headers,
-            protocol=self.protocol,
+            headers=self.headers,
+            protocol=self.scheme,
         )
 
         # should get UNAUTHORIZED

@@ -1,6 +1,7 @@
 """Profile Resource Test."""
 
 import uuid
+import pytest
 from pony.orm import db_session
 from muria.init import config
 from muria.util.misc import generate_chars
@@ -12,35 +13,32 @@ from falcon import (
 )
 
 
-class Profile():
+@pytest.fixture(scope="class")
+def url(request):
+    request.cls.url = "/v1/profile"
+
+
+@pytest.mark.usefixtures("client", "url", "properties")
+class TestProfile():
     @db_session
     def test_get_profile(self, client, request):
 
-        url = "/v1/profile"
-
-        # headers updated based on header requirements
-        headers = {
-            "Content-Type": "application/json",
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience")
-        }
-
         # no query_string
         resp = client.simulate_get(
-            path=url,
-            headers=headers,
-            protocol=self.protocol
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme
         )
 
         # should get NOT_FOUND
         assert resp.status == HTTP_NOT_FOUND
 
         # with invalid uuid
-        query = "id=%s" % self.user_profile.id[:-2] + generate_chars(2)
+        query = "id=%s" % self.profile.id[:-2] + generate_chars(2)
         resp = client.simulate_get(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             query_string=query
         )
 
@@ -50,9 +48,9 @@ class Profile():
         # with non-existent uuid
         query = "id=%s" % str(uuid.uuid4())
         resp = client.simulate_get(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             query_string=query
         )
 
@@ -60,30 +58,21 @@ class Profile():
         assert resp.status == HTTP_NOT_FOUND
 
         # with correct uuid
-        query = "id=%s" % self.user_profile.id
+        query = "id=%s" % self.profile.id
 
         resp = client.simulate_get(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             query_string=query
         )
 
         # should be OK and match
         assert resp.status == HTTP_OK
-        assert resp.json == self.user_profile.unload()
+        assert resp.json == self.profile.unload()
 
     @db_session
     def test_edit_profile(self, client, request):
-
-        url = "/v1/profile"
-
-        # headers updated based on header requirements
-        headers = {
-            "Content-Type": "application/json",
-            "Host": config.get("security", "issuer"),
-            "Origin": config.get("security", "audience")
-        }
 
         bio = {
             "id": "7b8bccaa-5f6f-4ac0-a469-432799c12549",
@@ -94,7 +83,7 @@ class Profile():
             "tanggal_masuk": "2019-08-12",
         }
 
-        assert bio == self.user_profile.unload()
+        assert bio == self.profile.unload()
 
         valid_id = bio["id"]
 
@@ -104,9 +93,9 @@ class Profile():
         payload = dumpAsJSON(bio)
 
         resp = client.simulate_patch(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             body=payload
         )
 
@@ -121,9 +110,9 @@ class Profile():
         payload = dumpAsJSON(bio)
 
         resp = client.simulate_patch(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             body=payload
         )
 
@@ -137,9 +126,9 @@ class Profile():
         payload = dumpAsJSON(bio)
 
         resp = client.simulate_patch(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             body=payload
         )
 
@@ -147,14 +136,14 @@ class Profile():
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
 
         # with valid bio id
-        bio = self.user_profile.unload()
+        bio = self.profile.unload()
 
         payload = dumpAsJSON(bio)
 
         resp = client.simulate_patch(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             body=payload
         )
 
@@ -167,9 +156,9 @@ class Profile():
         payload = dumpAsJSON(bio)
 
         resp = client.simulate_patch(
-            path=url,
-            headers=headers,
-            protocol=self.protocol,
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
             body=payload
         )
 
