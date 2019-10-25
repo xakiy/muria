@@ -18,7 +18,7 @@ from pony.orm import (
 db = connection = Database()
 
 
-class Bio(db.Entity, EntityMixin):
+class User(db.Entity, EntityMixin):
     # We store uuid in string column instead of binary
     # to simplify object instantiation and lookup
     id = PrimaryKey(str, 36, default=uuid.uuid4)
@@ -27,13 +27,8 @@ class Bio(db.Entity, EntityMixin):
     tempat_lahir = Optional(str, 60)
     tanggal_lahir = Optional(date)
     tanggal_masuk = Optional(date, default=lambda: date.today())
-    user = Optional("User")
-
-
-class User(db.Entity, EntityMixin):
-    id = PrimaryKey(str, 36, default=uuid.uuid4)
-    profile = Required(Bio)
     username = Required(str, 40, unique=True)
+    situs = Optional(str)
     email = Required(str, 60, unique=True)
     password = Required(str)
     salt = Required(str)
@@ -68,7 +63,7 @@ class User(db.Entity, EntityMixin):
         return self.password == self.hash_password(password, salt_bin)
 
 
-class BasicToken(db.Entity):
+class BasicToken(db.Entity, EntityMixin):
     id = PrimaryKey(int, size=64, auto=True)
     token_type = Discriminator(str)
     _discriminator_ = "basic"

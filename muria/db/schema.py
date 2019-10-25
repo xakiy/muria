@@ -51,15 +51,6 @@ class Surel(fields.Email):
         return str(value).lower()
 
 
-class _Bio(Schema):
-    id = UID(required=True, default=uuid.uuid4)
-    nama = fields.String(required=True)
-    jinshi = fields.String(required=True, validate=OneOf(["l", "p"]))
-    tempat_lahir = fields.String()
-    tanggal_lahir = Tanggal(allow_none=True)
-    tanggal_masuk = Tanggal()
-
-
 class _Credentials(Schema):
     username = fields.String(
         required=True,
@@ -70,6 +61,18 @@ class _Credentials(Schema):
 
 class _User(_Credentials):
     id = UID(required=True, default=uuid.uuid4)
-    profile = fields.Nested("_Bio", only=("id", "nama", "jinshi"))
-    email = Surel(missing=None, allow_none=True)
-    suspended = fields.Boolean(required=True)
+    nama = fields.String(required=True)
+    jinshi = fields.String(required=True, validate=OneOf(["l", "p"]))
+    tempat_lahir = fields.String()
+    tanggal_lahir = Tanggal(allow_none=True)
+    tanggal_masuk = Tanggal()
+    situs = fields.URL()
+    email = Surel(required=True)
+    suspended = fields.Boolean(required=True, dump_only=True)
+
+
+class _BasicToken(Schema):
+    access_token = fields.String(required=True)
+    refresh_token = fields.String(required=True)
+    issued_at = fields.String()
+    expires_in = fields.Integer()

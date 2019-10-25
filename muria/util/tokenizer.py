@@ -81,7 +81,7 @@ class TokenBasic(BaseToken):
                 expires_in=self.token_expire,
                 user=user
             )
-            return token.to_dict()
+            return token.unload()
 
     @db_session
     def verify_token(self, token, allow_expired=False):

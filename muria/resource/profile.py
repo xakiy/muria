@@ -1,7 +1,7 @@
 """Profile Resource."""
 
 from . import Resource
-from muria.db import Bio
+from muria.db import User
 from pony.orm import db_session, flush
 from muria.util.misc import is_uuid
 from falcon import (
@@ -21,8 +21,8 @@ class Profile(Resource):
         if not is_uuid(id):
             raise HTTPNotFound()
 
-        if Bio.exists(id=id):
-            resp.media = Bio.get(id=id).unload()
+        if User.exists(id=id):
+            resp.media = User.get(id=id).unload()
             resp.status = HTTP_OK
         else:
             raise HTTPNotFound()
@@ -30,21 +30,21 @@ class Profile(Resource):
     @db_session
     def on_patch(self, req, resp, **params):
         id = req.media.get("id", "")
-        if is_uuid(id) and Bio.exists(id=id):
+        if is_uuid(id) and User.exists(id=id):
 
-            profile = Bio.get(id=id)
+            user = User.get(id=id)
             # validate submitted data
             try:
-                update = profile.clean(req.media)
-            except ValidationError as error:
+                update = user.clean(req.media)
+            except (TypeError, ValidationError) as error:
                 raise HTTPUnprocessableEntity(
                     title="Profile Update Error",
                     description={"error": error.messages}
                 )
 
-            profile.set(**update)
+            user.set(**update)
             flush()
-            resp.media = profile.unload()
+            resp.media = user.unload()
             resp.status = HTTP_OK
         else:
             raise HTTPNotFound()
