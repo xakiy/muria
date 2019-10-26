@@ -4,6 +4,7 @@ from . import Resource
 from muria.init import user_authentication, DEBUG
 from muria.common.error import InvalidTokenError
 from pony.orm import db_session
+from muria.util.misc import extract_auth_header
 from falcon import (
     HTTP_OK,
     HTTPBadRequest
@@ -28,10 +29,19 @@ class Authentication(Resource):
     @db_session
     def on_post(self, req, resp):
         if req.media:
-            token = user_authentication.authenticate_user(
-                username=req.media.get("username", ""),
-                password=req.media.get("password", "")
+                token = user_authentication.authenticate_user(
+                    username=req.media.get("username", ""),
+                    password=req.media.get("password", "")
+                )
+        elif req.headers.get("AUTHORIZATION"):
+            username, password = extract_auth_header(
+                req.headers.get("AUTHORIZATION", "")
             )
+            token = user_authentication.authenticate_user(
+                username=username,
+                password=password
+            )
+        if token:
             resp.status = HTTP_OK
             resp.media = token
         else:

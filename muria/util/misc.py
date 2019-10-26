@@ -4,6 +4,7 @@ import hashlib
 import string
 import random
 import uuid
+import base64
 
 
 UNICODE_ASCII_CHARACTER_SET = string.ascii_letters + string.digits
@@ -29,3 +30,19 @@ def is_uuid(uuid_string):
         return uuid.UUID(uuid_string)
     except Exception:
         return None
+
+
+def extract_auth_header(auth_string, auth='basic'):
+    # currently only support basic and bearer
+    types = ('basic', 'bearer')
+    if auth not in types:
+        auth = 'basic'
+    # extracting string like 'Basic am9objpzZWNyZXQ='
+    encoded = auth_string.partition(auth.title())[2].strip()
+    if not len(encoded) > 0:
+        return "", ""
+    if not isinstance(encoded, bytes):
+        encoded = bytes(encoded, 'utf8')
+    decoded = base64.urlsafe_b64decode(encoded).decode('utf8')
+    # return list of username and password
+    return decoded.split(':')

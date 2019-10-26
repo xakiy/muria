@@ -1,7 +1,8 @@
 """Authentication Test."""
 
 import pytest
-from muria.init import config, DEBUG, user_authentication
+import base64
+from muria.init import DEBUG, user_authentication
 # from muria.util.json import dumpAsJSON
 from urllib import parse
 from muria.util.misc import generate_chars
@@ -130,6 +131,33 @@ class TestAuth:
         resp = client.simulate_post(
             path=self.url,
             body=parse.urlencode(credentials),
+            headers=headers,
+            protocol=self.scheme,
+        )
+
+        access_token = resp.json.get("access_token")
+
+        # should get OK
+        assert resp.status == HTTP_OK
+
+        # should pass
+        assert access_token == user_authentication.check_token(access_token)
+
+    def test_post_valid_credentials_as_basic_auth(self, client, request):
+        # post as www-url-encoded content
+        headers = self.headers
+
+        # login with valid credentials
+        credentials = ":".join([self.user.username, self.password_string])
+
+        auth_string = "Basic %s" % \
+            base64.encodebytes(bytes(credentials, 'utf8'))[:-1].decode('utf8')
+        # assert auth_string == 'foo'
+        headers.update(
+            {"AUTHORIZATION": auth_string}
+        )
+        resp = client.simulate_post(
+            path=self.url,
             headers=headers,
             protocol=self.scheme,
         )
