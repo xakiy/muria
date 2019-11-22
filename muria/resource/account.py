@@ -1,22 +1,22 @@
-"""Profile Resource."""
+"""Account Resource."""
 
 from . import Resource
 from muria.db import User
 from pony.orm import db_session, flush
-from muria.util.misc import is_uuid
 from falcon import (
     HTTPNotFound,
     HTTPBadRequest,
     HTTPConflict,
     HTTPUnprocessableEntity,
     HTTP_OK,
+    HTTP_GONE,
     HTTP_CREATED
 )
 from muria.db.schema import _User
 from marshmallow import ValidationError
 
 
-class Profiles(Resource):
+class Accounts(Resource):
 
     @db_session
     def on_get(self, req, resp, **params):
@@ -29,8 +29,8 @@ class Profiles(Resource):
             if query.count() > 0:
                 resp.media = {
                     "count": query.count(),
-                    "profiles": [
-                        schema.dump(profile.to_dict()) for profile in query
+                    "accounts": [
+                        schema.dump(account.to_dict()) for account in query
                     ]
                 }
                 resp.status = HTTP_OK
@@ -42,14 +42,14 @@ class Profiles(Resource):
             offset = req.params.get("index", 0)
             limit = max_limit if req.params.get("count", 10) > max_limit else 10
 
-            profiles = User.select()[offset:limit]
+            accounts = User.select()[offset:limit]
             schema = _User()
-            found = len(profiles)
+            found = len(accounts)
             if found > 0:
                 resp.media = {
                     "count": found,
-                    "profiles": [
-                        schema.dump(profile.to_dict()) for profile in profiles
+                    "accounts": [
+                        schema.dump(account.to_dict()) for account in accounts
                     ]
                 }
                 resp.status = HTTP_OK
@@ -68,7 +68,7 @@ class Profiles(Resource):
             data = _user.load(req.media, partial=("id",))
         except ValidationError as error:
             raise HTTPUnprocessableEntity(
-                title="Profile Update Error",
+                title="Account Update Error",
                 description={"error": error.messages}
             )
 
@@ -85,11 +85,11 @@ class Profiles(Resource):
             flush()
             resp.media = user.unload()
             resp.status = HTTP_CREATED
-        except Exception as error:
+        except Exception:
             raise HTTPBadRequest()
 
 
-class ProfileDetail(Resource):
+class AccountDetail(Resource):
 
     @db_session
     def on_get(self, req, resp, id, **params):
@@ -113,12 +113,34 @@ class ProfileDetail(Resource):
                 update = user.clean(req.media, partial=("id", ))
             except ValidationError as error:
                 raise HTTPUnprocessableEntity(
-                    title="Profile Update Error",
+                    title="Account Update Error",
                     description={"error": error.messages}
                 )
             user.set(**update)
             flush()
             resp.media = user.unload()
             resp.status = HTTP_OK
+        else:
+            raise HTTPNotFound()
+
+    @db_session
+    def on_delete(self, req, resp, id, **params):
+
+        # NOTE: Secure this endpoint so that only privileged user is allowed
+        id = str(id)
+        if User.exists(id=id):
+
+            user = User.get(id=id)
+            try:
+                deleted = user.unload()
+                user.delete()
+            except ValidationError as error:
+                raise HTTPUnprocessableEntity(
+                    title="Account Delete Error",
+                    description={"error": error.messages}
+                )
+            flush()
+            resp.media = deleted
+            resp.status = HTTP_GONE
         else:
             raise HTTPNotFound()
