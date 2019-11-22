@@ -21,14 +21,14 @@ db = connection = Database()
 class User(db.Entity, EntityMixin):
     # We store uuid in string column instead of binary
     # to simplify object instantiation and lookup
-    id = PrimaryKey(str, 36, default=uuid.uuid4)
+    id = PrimaryKey(str, 36, default=str(uuid.uuid4()))
     nama = Required(str)
     jinshi = Optional(str, 1)
     tempat_lahir = Optional(str, 60)
     tanggal_lahir = Optional(date)
     tanggal_masuk = Optional(date, default=lambda: date.today())
     username = Required(str, 40, unique=True)
-    situs = Optional(str)
+    situs = Optional(str, default="")
     email = Required(str, 60, unique=True)
     password = Required(str)
     salt = Required(str)

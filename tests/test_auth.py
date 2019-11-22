@@ -7,6 +7,7 @@ from muria.init import DEBUG, user_authentication
 from urllib import parse
 from muria.util.misc import generate_chars
 from falcon import (
+    HTTP_BAD_REQUEST,
     HTTP_UNPROCESSABLE_ENTITY,
     HTTP_UNAUTHORIZED,
     HTTP_OK
@@ -33,6 +34,31 @@ class TestAuth:
         assert resp.headers.get('www-authenticate') == 'Bearer'
         if DEBUG:
             assert resp.json == {"WWW-Authenticate": "Bearer"}
+
+    def test_post_no_credentials(self, client):
+
+        resp = client.simulate_post(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
+
+    def test_post_empty_credentials(self, client):
+        # test with empty credentials
+        credentials = dict()
+
+        resp = client.simulate_post(
+            path=self.url,
+            json=credentials,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
 
     def test_post_shorted_password(self, client):
         # test with short password, less than 8 characters
@@ -144,7 +170,7 @@ class TestAuth:
         assert access_token == user_authentication.check_token(access_token)
 
     def test_post_valid_credentials_as_basic_auth(self, client, request):
-        # post as www-url-encoded content
+        # post credential as Basic Auth
         headers = self.headers
 
         # login with valid credentials
@@ -152,7 +178,7 @@ class TestAuth:
 
         auth_string = "Basic %s" % \
             base64.encodebytes(bytes(credentials, 'utf8'))[:-1].decode('utf8')
-        # assert auth_string == 'foo'
+
         headers.update(
             {"AUTHORIZATION": auth_string}
         )
@@ -167,8 +193,33 @@ class TestAuth:
         # should get OK
         assert resp.status == HTTP_OK
 
-        # should pass
+        # should equal
         assert access_token == user_authentication.check_token(access_token)
+
+    def test_post_verify_without_access_token(self, client, request):
+
+        # no access_token payload
+        resp = client.simulate_post(
+            path=self.url + "/verify",
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
+
+        # empty dict
+        payload = {}
+
+        resp = client.simulate_post(
+            path=self.url + "/verify",
+            json=payload,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
 
     def test_post_verify_valid_access_token(self, client, request):
         # Veriy token whether it is valid or not
@@ -198,6 +249,19 @@ class TestAuth:
         broken_token = access_token[:-2]
 
         payload = {"access_token": broken_token}
+
+        resp = client.simulate_post(
+            path=self.url + "/verify",
+            json=payload,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
+
+        # not token
+        payload = {"not_token": "aiou"}
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -276,3 +340,32 @@ class TestAuth:
 
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
+
+    def test_post_refresh_with_no_tokens(self, client, request):
+
+        # tamper that cached refresh token
+        payload = {
+            "not_token": "foo",
+            "not_refresh_token": "bar"
+        }
+
+        resp = client.simulate_post(
+            path=self.url + "/refresh",
+            json=payload,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
+
+    def test_post_refresh_with_payload(self, client, request):
+
+        resp = client.simulate_post(
+            path=self.url + "/refresh",
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST

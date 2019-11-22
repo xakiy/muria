@@ -2,6 +2,7 @@
 
 import jwt
 import time
+import base64
 from datetime import datetime, timedelta
 from calendar import timegm
 from muria.db.model import User, BasicToken
@@ -14,6 +15,22 @@ from muria.common.error import (
     InvalidRefreshTokenError,
     RefreshTokenExpiredError
 )
+
+
+def extract_auth_header(auth_string, auth='basic'):
+    # currently only support basic and bearer
+    types = ('basic', 'bearer')
+    if auth not in types:
+        auth = 'basic'
+    # extracting string like 'Basic am9objpzZWNyZXQ='
+    encoded = auth_string.partition(auth.title())[2].strip()
+    if not len(encoded) > 0:
+        return "", ""
+    if not isinstance(encoded, bytes):
+        encoded = bytes(encoded, 'utf8')
+    decoded = base64.urlsafe_b64decode(encoded).decode('utf8')
+    # return list of username and password
+    return decoded.split(':')
 
 
 class BaseToken(object):
@@ -39,6 +56,10 @@ class BaseToken(object):
         """Validate access_token and refresh_token pair
            and renew them if validated.
         """
+        raise NotImplementedError()
+
+    def get_token_owner(self, token):
+        """Return token owner if token is valid."""
         raise NotImplementedError()
 
     def is_token(self, token):
@@ -138,8 +159,37 @@ class TokenBasic(BaseToken):
         old_token.revoked = True
         return new_token
 
+    @db_session
+    def get_token_owner(self, token):
+
+        return self.get_token_owner_attr(token, attr=("user_id"))
+
+    @db_session
+    def get_token_owner_attr(self, token, attr=("user_id")):
+
+        if not self.is_token(token):
+            raise InvalidTokenError()
+
+        basic_token = BasicToken.get(
+            access_token=token,
+            token_type=self.TOKEN_TYPE
+        )
+        if basic_token is None:
+            # token is received but unable to process due to
+            # invalid content
+            raise InvalidTokenError()
+
+        if basic_token.is_revoked():
+            raise TokenRevokedError()
+
+        data = {}
+        for i in attr:
+            if hasattr(basic_token.user, i):
+                data[i] = getattr(basic_token.user, i)
+        return data
+
     def is_token(self, token):
-        return len(token) == self.token_basic_length
+        return isinstance(token, str) and len(token) == self.token_basic_length
 
 
 class TokenJWT(BaseToken):

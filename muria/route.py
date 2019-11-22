@@ -12,4 +12,5 @@ resource_route.append(("/auth", auth.Authentication()))
 resource_route.append(("/auth/verify", auth.Verification()))
 resource_route.append(("/auth/refresh", auth.Refresh()))
 
-resource_route.append(("/profile", profile.Profile()))
+resource_route.append(("/profile", profile.Profiles()))
+resource_route.append(("/profile/{id:uuid}", profile.ProfileDetail()))

@@ -92,3 +92,28 @@ class UserAuthentication(object):
                 title="Token Verification",
                 description=failure.status
             )
+
+    @db_session
+    def get_token_owner(self, token):
+        return self.get_token_owner_attr(token, attr=("user_id"))
+
+    @db_session
+    def get_token_owner_attr(self, token, attr=("user_id")):
+        data = {}
+        failure = None
+        for i in self._tokenizers:
+            try:
+                data = self._tokenizers[i].get_token_owner_attr(token, attr)
+                break
+            except InvalidTokenError as error:
+                failure = error
+                continue
+
+        if data:
+            return data
+        else:
+            raise HTTPUnauthorized(
+                code=failure.code,
+                title="Token Verification",
+                description=failure.status
+            )

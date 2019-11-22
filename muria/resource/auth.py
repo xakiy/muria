@@ -4,7 +4,7 @@ from . import Resource
 from muria.init import user_authentication, DEBUG
 from muria.common.error import InvalidTokenError
 from pony.orm import db_session
-from muria.util.misc import extract_auth_header
+from muria.util.tokenizer import extract_auth_header
 from falcon import (
     HTTP_OK,
     HTTPBadRequest
@@ -41,11 +41,11 @@ class Authentication(Resource):
                 username=username,
                 password=password
             )
-        if token:
-            resp.status = HTTP_OK
-            resp.media = token
         else:
             raise HTTPBadRequest()
+
+        resp.status = HTTP_OK
+        resp.media = token
 
 
 class Verification(Resource):
@@ -58,25 +58,26 @@ class Verification(Resource):
     def on_post(self, req, resp, **params):
         # TODO:
         # implement some cache validations on the user
-        try:
+
+        if req.media:
             token = user_authentication.check_token(
-                req.media.get("access_token")
+                req.media.get("access_token", "")
             )
             content = {"access_token": token}
             resp.status = HTTP_OK
             resp.media = content
-        except InvalidTokenError as error:
-            raise HTTPBadRequest(
-                code=error.code,
-                description=str(error.status)
-            )
+        else:
+            raise HTTPBadRequest()
 
 
 class Refresh(Resource):
     def on_post(self, req, resp, **params):
-        access_token = req.media.get("access_token")
-        refresh_token = req.media.get("refresh_token")
-        resp.media = user_authentication.refresh_token(
-            access_token, refresh_token
-        )
-        resp.status = HTTP_OK
+        if req.media:
+            access_token = req.media.get("access_token", "")
+            refresh_token = req.media.get("refresh_token", "")
+            resp.media = user_authentication.refresh_token(
+                access_token, refresh_token
+            )
+            resp.status = HTTP_OK
+        else:
+            raise HTTPBadRequest()

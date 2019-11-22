@@ -9,6 +9,11 @@ It will not be extensive and will change
 accordingly.
 
 ### Requirement Checklist
+Date: 2019-10-27
+---
+- [] Simple Auth Checker
+- [] Tests
+---
 Date: 2019-10-14
 ---
 - [x] Simple Auth Token

@@ -66,9 +66,9 @@ class _User(_Credentials):
     tempat_lahir = fields.String()
     tanggal_lahir = Tanggal(allow_none=True)
     tanggal_masuk = Tanggal()
-    situs = fields.URL()
+    situs = fields.URL(allow_none=True, missing=None)
     email = Surel(required=True)
-    suspended = fields.Boolean(required=True, dump_only=True)
+    suspended = fields.Boolean(required=True, default=False, dump_only=True)
 
 
 class _BasicToken(Schema):
