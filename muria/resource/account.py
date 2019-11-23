@@ -7,6 +7,7 @@ from falcon import (
     HTTPNotFound,
     HTTPBadRequest,
     HTTPConflict,
+    HTTPInternalServerError,
     HTTPUnprocessableEntity,
     HTTP_OK,
     HTTP_GONE,
@@ -60,7 +61,7 @@ class Accounts(Resource):
     def on_post(self, req, resp, **params):
 
         if not req.media:
-            raise HTTPNotFound()
+            raise HTTPBadRequest()
 
         _user = _User()
 
@@ -86,7 +87,8 @@ class Accounts(Resource):
             resp.media = user.unload()
             resp.status = HTTP_CREATED
         except Exception:
-            raise HTTPBadRequest()
+            # this would rarely hit
+            raise HTTPInternalServerError(description="Database Error")
 
 
 class AccountDetail(Resource):
@@ -134,10 +136,10 @@ class AccountDetail(Resource):
             try:
                 deleted = user.unload()
                 user.delete()
-            except ValidationError as error:
+            except Exception:
+                # this might cought either pony or marshmallow exception
                 raise HTTPUnprocessableEntity(
-                    title="Account Delete Error",
-                    description={"error": error.messages}
+                    title="Account Delete Error"
                 )
             flush()
             resp.media = deleted

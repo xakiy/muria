@@ -11,6 +11,7 @@ from falcon import (
     HTTP_CREATED,
     HTTP_CONFLICT,
     HTTP_NOT_FOUND,
+    HTTP_BAD_REQUEST,
     HTTP_UNPROCESSABLE_ENTITY
 )
 
@@ -40,6 +41,58 @@ def another_account(request):
 class TestAccounts():
 
     @db_session
+    def test_post_account_with_no_payload(self, client, request):
+        # post no payload
+        resp = client.simulate_post(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme
+        )
+        # should be BAD REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
+
+    @db_session
+    def test_post_account_with_invalid_data(self, client, request):
+
+        data = self.another_account.copy()
+
+        # tampered the data
+        data['username'] = 'unllowed-username'
+        # post new account
+        resp = client.simulate_post(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
+            json=data
+        )
+        # should be UNPROCESSABLE ENTITY
+        assert resp.status == HTTP_UNPROCESSABLE_ENTITY
+
+        # tampered the data
+        data['username'] = 'un@llowed-username'
+        # post new account
+        resp = client.simulate_post(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
+            json=data
+        )
+        # should be UNPROCESSABLE ENTITY
+        assert resp.status == HTTP_UNPROCESSABLE_ENTITY
+
+        # tampered the data
+        data['jinshi'] = 'x'
+        # post new account
+        resp = client.simulate_post(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
+            json=data
+        )
+        # should be UNPROCESSABLE ENTITY
+        assert resp.status == HTTP_UNPROCESSABLE_ENTITY
+
+    @db_session
     def test_post_account_with_valid_data(self, client, request):
         # post new account
         resp = client.simulate_post(
@@ -52,6 +105,8 @@ class TestAccounts():
         assert resp.status == HTTP_CREATED
         assert resp.json.get('username') == self.another_account['username']
 
+    @db_session
+    def test_post_repost_account_with_valid_data(self, client, request):
         # try re-post it
         resp = client.simulate_post(
             path=self.url,
@@ -63,7 +118,22 @@ class TestAccounts():
         assert resp.status == HTTP_CONFLICT
 
     @db_session
-    def test_get_account_with_search(self, client, request):
+    def test_get_account_with_incorrect_search(self, client, request):
+
+        username = uri.encode_value('random.name.you.can.imagine')
+
+        resp = client.simulate_get(
+            path=self.url,
+            headers=self.headers,
+            protocol=self.scheme,
+            params={"search": username}
+        )
+
+        # should get OK
+        assert resp.status == HTTP_NOT_FOUND
+
+    @db_session
+    def test_get_account_with_correct_search(self, client, request):
 
         username = uri.encode_value(self.another_account['username'])
 
@@ -88,7 +158,8 @@ class TestAccounts():
             protocol=self.scheme
         )
 
-        # should get OK
+        # assuming there were any accounts already populated in the db
+        # this should get OK
         assert resp.status == HTTP_OK
         assert resp.json.get('count') > 0
 
