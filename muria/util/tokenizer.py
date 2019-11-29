@@ -95,6 +95,14 @@ class TokenBasic(BaseToken):
             access_token = self._generate_token()
             refresh_token = self._generate_token(self.token_refresh_length)
 
+            # make sure that we create very unique token pair
+            while BasicToken.exists(
+                lambda t: t.access_token == access_token or
+                t.refresh_token == refresh_token
+            ):
+                access_token = self._generate_token()
+                refresh_token = self._generate_token(self.token_refresh_length)
+
             token = BasicToken(
                 token_type=self.TOKEN_TYPE,
                 access_token=access_token,
