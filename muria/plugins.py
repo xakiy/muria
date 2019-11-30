@@ -30,7 +30,7 @@ cors = CORS(
     max_age=config.getint("cors", "max_age"),
 )
 
-# security_middlewares.append(RequireHTTPS())
+security_middlewares.append(RequireHTTPS())
 security_middlewares.append(cors.middleware)
 
 middleware_list = common_middlewares  + security_middlewares
