@@ -1,4 +1,6 @@
 """User Resource."""
+# NOTE: This resource is intended for super admin only,
+#       for personal user info please see profile resource.
 
 from muria.common.resource import Resource
 from muria.db import User
