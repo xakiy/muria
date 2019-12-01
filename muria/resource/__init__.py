@@ -1,8 +1,11 @@
-from muria.init import config
+from .user import Users, UserDetail
+from .auth import Authentication, Verification, Refresh
 
 
-class Resource(object):
-    """Resource Base Class."""
-
-    def __init__(self, config=config, **params):
-        self.config = config
+__all__ = [
+    Users,
+    UserDetail,
+    Authentication,
+    Verification,
+    Refresh
+]

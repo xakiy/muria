@@ -1,6 +1,6 @@
-"""Account Resource."""
+"""User Resource."""
 
-from . import Resource
+from muria.common.resource import Resource
 from muria.db import User
 from pony.orm import db_session, flush
 from falcon import (
@@ -17,45 +17,36 @@ from muria.db.schema import _User
 from marshmallow import ValidationError
 
 
-class Accounts(Resource):
+class Users(Resource):
 
     @db_session
     def on_get(self, req, resp, **params):
 
+        max_limit = self.config.getint("app", "page_limit")
+        count = int(req.params.get("count", 20))
+
+        offset = int(req.params.get("index", 0))
+        limit = max_limit if count > max_limit else 20
+
         if req.params.get("search") is not None:
-            schema = _User()
-            query = User.select(
+            users = User.select(
                 lambda user: req.params.get("search") in user.username
-            )
-            if query.count() > 0:
-                resp.media = {
-                    "count": query.count(),
-                    "accounts": [
-                        schema.dump(account.to_dict()) for account in query
-                    ]
-                }
-                resp.status = HTTP_OK
-            else:
-                raise HTTPNotFound()
+            )[offset:limit]
         else:
-            max_limit = self.config.getint("app", "page_limit")
+            users = User.select()[offset:limit]
 
-            offset = req.params.get("index", 0)
-            limit = max_limit if req.params.get("count", 10) > max_limit else 10
-
-            accounts = User.select()[offset:limit]
+        found = len(users)
+        if found > 0:
             schema = _User()
-            found = len(accounts)
-            if found > 0:
-                resp.media = {
-                    "count": found,
-                    "accounts": [
-                        schema.dump(account.to_dict()) for account in accounts
-                    ]
-                }
-                resp.status = HTTP_OK
-            else:
-                raise HTTPNotFound()
+            resp.media = {
+                "count": found,
+                "users": [
+                    schema.dump(user.to_dict()) for user in users
+                ]
+            }
+            resp.status = HTTP_OK
+        else:
+            raise HTTPNotFound()
 
     @db_session
     def on_post(self, req, resp, **params):
@@ -69,7 +60,7 @@ class Accounts(Resource):
             data = _user.load(req.media, partial=("id",))
         except ValidationError as error:
             raise HTTPUnprocessableEntity(
-                title="Account Update Error",
+                title="User Update Error",
                 description={"error": error.messages}
             )
 
@@ -91,7 +82,7 @@ class Accounts(Resource):
             raise HTTPInternalServerError(description="Database Error")
 
 
-class AccountDetail(Resource):
+class UserDetail(Resource):
 
     @db_session
     def on_get(self, req, resp, id, **params):
@@ -115,7 +106,7 @@ class AccountDetail(Resource):
                 update = user.clean(req.media, partial=("id", ))
             except ValidationError as error:
                 raise HTTPUnprocessableEntity(
-                    title="Account Update Error",
+                    title="User Update Error",
                     description={"error": error.messages}
                 )
             user.set(**update)
@@ -139,7 +130,7 @@ class AccountDetail(Resource):
             except Exception:
                 # this might cought either pony or marshmallow exception
                 raise HTTPUnprocessableEntity(
-                    title="Account Delete Error"
+                    title="User Delete Error"
                 )
             flush()
             resp.media = deleted

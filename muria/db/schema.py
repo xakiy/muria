@@ -52,6 +52,7 @@ class Surel(fields.Email):
 
 
 class _Credentials(Schema):
+    # min length is 8, max length is 30
     username = fields.String(
         required=True,
         validate=Regexp(r"^[a-z]+(?:[_.]?[a-zA-Z0-9]){7,28}$", re.U & re.I),

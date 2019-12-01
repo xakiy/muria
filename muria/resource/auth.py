@@ -1,8 +1,7 @@
 """User Resource."""
 
-from . import Resource
+from muria.common.resource import Resource
 from muria.init import user_authentication, DEBUG
-from muria.common.error import InvalidTokenError
 from pony.orm import db_session
 from muria.util.tokenizer import extract_auth_header
 from falcon import (
