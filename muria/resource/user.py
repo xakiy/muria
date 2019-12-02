@@ -15,7 +15,6 @@ from falcon import (
     HTTP_GONE,
     HTTP_CREATED
 )
-from muria.db.schema import _User
 from marshmallow import ValidationError
 
 
@@ -39,11 +38,10 @@ class Users(Resource):
 
         found = len(users)
         if found > 0:
-            schema = _User()
             resp.media = {
                 "count": found,
                 "users": [
-                    schema.dump(user.to_dict()) for user in users
+                    User.unload(user) for user in users
                 ]
             }
             resp.status = HTTP_OK
@@ -56,10 +54,8 @@ class Users(Resource):
         if not req.media:
             raise HTTPBadRequest()
 
-        _user = _User()
-
         try:
-            data = _user.load(req.media, partial=("id",))
+            data = User.clean(req.media, partial=("id",))
         except ValidationError as error:
             raise HTTPUnprocessableEntity(
                 title="User Update Error",
@@ -73,6 +69,7 @@ class Users(Resource):
             raise HTTPConflict()
 
         try:
+            # create salt and hashed password
             data['salt'], data['password'] = \
                 User.create_salted_password(password)
             user = User(**data)

@@ -25,13 +25,16 @@ class UserAuthentication(object):
         self._tokenizers = {'basic': token_basic, 'jwt': token_jwt}
         self.tokenizer = self._tokenizers['basic']
 
+    def validate(self, credentials):
+        return self.login_schema.validate(credentials)
+
     @db_session
     def authenticate_user(self, username, password, token_type='basic'):
         """Authenticate user with their username and password."""
 
         self.tokenizer = self._tokenizers.get(token_type)
         credentials = {"username": username, "password": password}
-        errors = self.login_schema.validate(credentials)
+        errors = self.validate(credentials)
         if errors:
             raise HTTPUnprocessableEntity(
                 code=88810,  # unprocessable creds either blank or invalid
