@@ -33,7 +33,7 @@ class TestAuth:
         assert resp.status == HTTP_OK
         assert resp.headers.get('www-authenticate') == 'Bearer'
         if DEBUG:
-            assert resp.json == {"WWW-Authenticate": "Bearer"}
+            assert resp.json == {"Ping": "Pong"}
 
     def test_post_no_credentials(self, client):
 

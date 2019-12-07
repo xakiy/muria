@@ -1,6 +1,6 @@
 """Tokenizers."""
 
-import jwt
+# from jose import jwt
 import time
 import base64
 from datetime import datetime, timedelta

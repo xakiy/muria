@@ -1,7 +1,7 @@
 """User Authentication Factory."""
 
 from muria.db.model import User
-from muria.db.schema import _Credentials
+from muria.db.schema import Credentials
 from pony.orm import db_session
 from muria.util.tokenizer import (
     TokenBasic,
@@ -19,7 +19,7 @@ class UserAuthentication(object):
 
     def __init__(self, config):
 
-        self.login_schema = _Credentials()
+        self.login_schema = Credentials()
         token_basic = TokenBasic(config)
         token_jwt = TokenJWT(config)
         self._tokenizers = {'basic': token_basic, 'jwt': token_jwt}

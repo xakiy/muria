@@ -22,6 +22,46 @@ class Users(Resource):
 
     @db_session
     def on_get(self, req, resp, **params):
+        """List of users.
+        ---
+        tags:
+        - user
+        summary: List of users
+        description: Get list of users
+        operationId: listUsers
+        produces:
+        - application/json
+        parameters:
+            - in: header
+              name: origin
+              type: string
+              required: true
+              description: CORS request origin
+            - in: header
+              name: authorization
+              type: string
+              required: true
+              description: Auth token
+            - in: query
+              name: search
+              type: string
+              required: false
+              description: Search user based on their username
+        responses:
+            200:
+                description: List of registered users
+                schema:
+                  type: object
+                  properties:
+                    count:
+                      type: integer
+                    users:
+                      type: array
+                      items:
+                        $ref: '#/definitions/User'
+            404:
+                description: No user found
+        """
 
         max_limit = self.config.getint("app", "page_limit")
         count = int(req.params.get("count", 20))
@@ -50,6 +90,41 @@ class Users(Resource):
 
     @db_session
     def on_post(self, req, resp, **params):
+        """Add new user.
+        ---
+        tags:
+        - user
+        summary: Add new user
+        description: Add new additional user
+        operationId: addUser
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+            - in: header
+              name: origin
+              type: string
+              required: true
+              description: CORS request origin
+            - in: body
+              name: user
+              required: true
+              description: user data
+              schema: User
+        responses:
+            201:
+                description: User added successfully
+                schema: User
+            400:
+                description: Bad request dou to bad parameters
+            409:
+                description: Conflicted, user already exist
+            422:
+                description: Unprocessable, invalids params found
+            500:
+                description: Internal service error
+        """
 
         if not req.media:
             raise HTTPBadRequest()
@@ -85,6 +160,36 @@ class UserDetail(Resource):
 
     @db_session
     def on_get(self, req, resp, id, **params):
+        """Get specifig user based on their id.
+        ---
+        tags:
+        - user
+        summary: Show user data
+        description: Get specific user information
+        operationId: getUser
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+            - in: header
+              name: origin
+              type: string
+              required: true
+              description: CORS request origin
+            - in: path
+              name: id:uuid
+              required: true
+              type: string
+              format: uuid
+              description: user id in uuid format
+        responses:
+            200:
+                description: Data of registered user
+                schema: User
+            404:
+                description: No user found
+        """
         id = str(id)
         if User.exists(id=id):
             resp.media = User.get(id=id).unload()
@@ -96,6 +201,41 @@ class UserDetail(Resource):
     def on_patch(self, req, resp, id, **params):
         # make sure that we use {id:uuid} in the route
         # so that invalid uuid won't reach here
+        """Edit user data
+        ---
+        tags:
+        - user
+        summary: Edit user data
+        description: Modify registered user data
+        operationId: editUser
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+            - in: header
+              name: origin
+              type: string
+              required: true
+              description: CORS request origin
+            - in: path
+              name: id:uuid
+              type: string
+              format: uuid
+              required: true
+            - in: body
+              name: user
+              required: true
+              description: user data
+              schema: User
+        responses:
+            200:
+                description: User aditted successfully
+            404:
+                description: No user found
+            422:
+                description: Unprocessable, invalids params found
+        """
         id = str(id)
         if User.exists(id=id):
 
@@ -117,8 +257,37 @@ class UserDetail(Resource):
 
     @db_session
     def on_delete(self, req, resp, id, **params):
-
         # NOTE: Secure this endpoint so that only privileged user is allowed
+        """Edit user data
+        ---
+        tags:
+        - user
+        summary: Delete user
+        description: Delete specific user based on their ID
+        operationId: delUser
+        produces:
+        - application/json
+        parameters:
+            - in: header
+              name: origin
+              type: string
+              required: true
+              description: CORS request origin
+            - in: path
+              name: id:uuid
+              type: string
+              format: uuid
+              required: true
+        responses:
+            404:
+                description: No user found
+            410:
+                description: Gone, user deleted successfully
+                schema: User
+            422:
+                description: Unprocessable, invalids params found
+        """
+
         id = str(id)
         if User.exists(id=id):
 

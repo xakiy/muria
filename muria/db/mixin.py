@@ -9,7 +9,7 @@ class EntityMixin(object):
     @classmethod
     def init(cls):
         cls.__module = import_module("muria.db.schema")
-        sch = "_%s" % cls.__getattribute__(cls, '__name__')
+        sch = cls.__getattribute__(cls, '__name__')
         if hasattr(cls.__module, sch):
             cls.schematic = getattr(cls.__module, sch)
             if not isinstance(cls.schema, cls.schematic):

@@ -51,7 +51,7 @@ class Surel(fields.Email):
         return str(value).lower()
 
 
-class _Credentials(Schema):
+class Credentials(Schema):
     # min length is 8, max length is 30
     username = fields.String(
         required=True,
@@ -60,7 +60,7 @@ class _Credentials(Schema):
     password = fields.String(validate=Length(min=8, max=40), load_only=True)
 
 
-class _User(_Credentials):
+class User(Credentials):
     id = UID(required=True, default=uuid.uuid4)
     nama = fields.String(required=True)
     jinshi = fields.String(required=True, validate=OneOf(["l", "p"]))
@@ -69,10 +69,10 @@ class _User(_Credentials):
     tanggal_masuk = Tanggal()
     situs = fields.URL(allow_none=True, missing=None)
     email = Surel(required=True)
-    suspended = fields.Boolean(required=True, default=False, dump_only=True)
+    suspended = fields.Boolean(default=False, dump_only=True)
 
 
-class _BasicToken(Schema):
+class BasicToken(Schema):
     access_token = fields.String(required=True)
     refresh_token = fields.String(required=True)
     issued_at = fields.String()
