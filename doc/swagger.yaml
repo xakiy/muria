@@ -1,0 +1,214 @@
+swagger: '2.0'
+info:
+  title: Muria Magna API
+  version: 1.0.0
+  description: >-
+    Sistem pengelolaan informasi pesantren, yang meliputi data penghuni pondok,
+    asrama, dan bank data santri.
+  contact:
+    name: Ahmad Ghulam Zakiy
+    email: ghulam.zakiy@gmail.com
+    url: 'https://twitter.com/xakiy'
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+host: api.krokod.net
+basePath: /v1
+schemes:
+  - https
+consumes:
+  - application/json
+  - multipart/form-data
+produces:
+  - application/json
+tags:
+  - name: auth
+    description: authentication end point
+  - name: user
+    description: user account information
+paths:
+  /auth:
+    get:
+      tags:
+        - auth
+      summary: pinging auth
+      operationId: pingAuth
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: origin
+          type: string
+          required: true
+          description: CORS origin header
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/auth'
+        '400':
+          description: Bad Request
+    post:
+      tags:
+        - auth
+      summary: authentication end point
+      operationId: authPost
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Objek auth yang akan ditambahkan
+          required: true
+          schema:
+            $ref: '#/definitions/auth'
+      responses:
+        '200':
+          description: Ok
+        '201':
+          description: Entitas auth berhasil ditambahkan
+        '400':
+          description: Entitas auth gagal ditambahkan
+        '409':
+          description: Entitas auth telah ada
+        '422':
+          description: Entitas auth tidak bisa diproses
+  /users:
+    get:
+      tags:
+        - user
+      summary: List of users
+      operationId: listUsers
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: authorization
+          type: string
+          required: true
+          description: Auth token
+        - in: query
+          name: search
+          type: string
+          required: false
+          description: Search user based on their username
+      responses:
+        '200':
+          description: Ok
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/user'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+    post:
+      tags:
+        - user
+      summary: Menambah user baru
+      description: ''
+      operationId: tambahuser
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Objek user yang akan ditambahkan
+          required: true
+          schema:
+            $ref: '#/definitions/user'
+      responses:
+        '201':
+          description: Entitas user berhasil ditambahkan
+        '400':
+          description: Entitas user gagal ditambahkan
+        '409':
+          description: Entitas user telah ada
+        '422':
+          description: Entitas user tidak bisa diproses
+      security:
+        - muria_auth:
+            - 'write:user'
+            - 'read:user'
+    patch:
+      tags:
+        - user
+      responses:
+        '201':
+          description: Entitas santri berhasil ditambahkan
+        '400':
+          description: Entitas santri gagal ditambahkan
+        '409':
+          description: Entitas santri telah ada
+        '422':
+          description: Entitas santri tidak bisa diproses
+    delete:
+      tags:
+        - user
+      responses:
+        '405':
+          description: Metode tidak diizinkan
+        '410':
+          description: Entitas berhasil dihapus
+definitions:
+  auth:
+    type: object
+    required:
+      - username
+      - password
+    properties:
+      username:
+        type: string
+        maxLength: 30
+      email:
+        type: string
+        maxLength: 60
+      password:
+        type: string
+        minLength: 8
+        maxLength: 40
+  user:
+    type: object
+    required:
+      - id
+      - nama
+      - username
+      - email
+      - password
+      - suspended
+    properties:
+      id:
+        type: string
+        format: uuid
+      nama:
+        type: string
+      username:
+        type: string
+        maxLength: 30
+      email:
+        type: string
+        maxLength: 60
+      password:
+        type: string
+        minLength: 8
+        maxLength: 40
+      suspended:
+        type: boolean
+securityDefinitions:
+  muria_auth:
+    type: oauth2
+    tokenUrl: 'https://api.krokod.net/v1/auth'
+    flow: password
+    scopes:
+      'write:user': ubah data user
+      'read:user': baca data user
+externalDocs:
+  description: Info lebih lanjut tentang Muria Magna
+  url: 'https://doc.girilabs.com/muria'
