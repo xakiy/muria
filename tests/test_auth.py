@@ -2,7 +2,7 @@
 
 import pytest
 import base64
-from muria.init import DEBUG, user_authentication
+from muria.init import DEBUG, authentication
 # from muria.util.json import dumpAsJSON
 from urllib import parse
 from muria.util.misc import generate_chars
@@ -167,7 +167,7 @@ class TestAuth:
         assert resp.status == HTTP_OK
 
         # should pass
-        assert access_token == user_authentication.check_token(access_token)
+        assert access_token == authentication.check_token(access_token)
 
     def test_post_valid_credentials_as_basic_auth(self, client, request):
         # post credential as Basic Auth
@@ -194,7 +194,7 @@ class TestAuth:
         assert resp.status == HTTP_OK
 
         # should equal
-        assert access_token == user_authentication.check_token(access_token)
+        assert access_token == authentication.check_token(access_token)
 
     def test_post_verify_without_access_token(self, client, request):
 

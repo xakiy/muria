@@ -1,9 +1,9 @@
 from .model import (
     User,
-    BasicToken
+    BearerToken
 )
 
 __all__ = [
     User,
-    BasicToken
+    BearerToken
 ]

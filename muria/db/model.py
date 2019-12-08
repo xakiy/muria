@@ -33,7 +33,7 @@ class User(db.Entity, EntityMixin):
     password = Required(str)
     salt = Required(str)
     suspended = Required(bool, default=False)
-    basic_tokens = Set("BasicToken")
+    tokens = Set("BaseToken")
     clients = Set("Client")
     grants = Set("Grant")
 
@@ -102,15 +102,15 @@ class Client(db.Entity):
         return self._default_scopes.split()
 
 
-class BasicToken(db.Entity, EntityMixin):
-    _discriminator_ = "basic"
+class BaseToken(db.Entity):
     id = PrimaryKey(int, size=64, auto=True)
     token_type = Discriminator(str)
     access_token = Required(str, 255, unique=True, index=True)
     refresh_token = Optional(str, 255, index=True)
     revoked = Required(bool, default=False)
     issued_at = Optional(int, default=lambda: int(time.time()))
-    expires_in = Optional(int, default=0)
+    expires_in = Optional(int, default=300)
+    expires = Optional(date)
     scope = Optional(str, default="")
     user = Required("User")
 
@@ -149,6 +149,10 @@ class BasicToken(db.Entity, EntityMixin):
         resource_scopes = set(scopes)
 
         return resource_scopes.issubset(provided_sopes)
+
+
+class BearerToken(BaseToken, EntityMixin):
+    _discriminator_ = "bearer"
 
 
 class Grant(db.Entity):

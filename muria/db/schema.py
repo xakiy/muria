@@ -72,8 +72,9 @@ class User(Credentials):
     suspended = fields.Boolean(default=False, dump_only=True)
 
 
-class BasicToken(Schema):
+class BearerToken(Schema):
     access_token = fields.String(required=True)
     refresh_token = fields.String(required=True)
+    token_type = fields.String(required=True)
     issued_at = fields.String()
     expires_in = fields.Integer()

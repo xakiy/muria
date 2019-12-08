@@ -1,7 +1,7 @@
-from muria.init import config
+from muria.init import config, authentication
 from muria.middleware.require_https import RequireHTTPS
 from muria.middleware.cors import CORS
-# from falcon_oauth.provider.oauth2 import OAuthProvider
+from falcon_oauth.provider.oauth2 import OAuthProvider
 # from falcon_oauth.utils import utcnow
 
 
@@ -31,6 +31,15 @@ cors = CORS(
         "cors", "allow_credentials_origins_list"
     ),
     max_age=config.getint("cors", "max_age"),
+)
+
+server = OAuthProvider(
+    clientgetter=authentication.get_client,
+    usergetter=authentication.get_user,
+    tokengetter=authentication.get_token,
+    tokensetter=authentication.set_token,
+    grantgetter=authentication.get_grant,
+    grantsetter=authentication.set_grant
 )
 
 security_middlewares.append(RequireHTTPS())

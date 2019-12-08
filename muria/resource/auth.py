@@ -1,9 +1,9 @@
 """Authentication Resource."""
 
 from muria.common.resource import Resource
-from muria.init import user_authentication, DEBUG
+from muria.init import authentication, DEBUG
 from pony.orm import db_session
-from muria.util.tokenizer import extract_auth_header
+from muria.util.token import extract_auth_header
 from falcon import (
     HTTP_OK,
     HTTPBadRequest
@@ -77,12 +77,12 @@ class Authentication(Resource):
         responses:
             200:
                 description: Acquire basic token
-                schema: BasicToken
+                schema: BearerToken
             400:
                 description: Bad request dou to invalid credentials
         """
         if req.media:
-                token = user_authentication.authenticate_user(
+                token = authentication.authenticate_user(
                     username=req.media.get("username", ""),
                     password=req.media.get("password", "")
                 )
@@ -90,7 +90,7 @@ class Authentication(Resource):
             username, password = extract_auth_header(
                 req.headers.get("AUTHORIZATION", "")
             )
-            token = user_authentication.authenticate_user(
+            token = authentication.authenticate_user(
                 username=username,
                 password=password
             )
@@ -140,13 +140,13 @@ class Verification(Resource):
         responses:
             200:
                 description: Verified token
-                schema: BasicToken
+                schema: BearerToken
             400:
                 description: Bad request dou to invalid access token
         """
 
         if req.media:
-            token = user_authentication.check_token(
+            token = authentication.check_token(
                 req.media.get("access_token", "")
             )
             content = {"access_token": token}
@@ -196,14 +196,14 @@ class Refresh(Resource):
         responses:
             200:
                 description: Refreshed token
-                schema: BasicToken
+                schema: BearerToken
             400:
                 description: Bad request dou to invalid token pair
         """
         if req.media:
             access_token = req.media.get("access_token", "")
             refresh_token = req.media.get("refresh_token", "")
-            resp.media = user_authentication.refresh_token(
+            resp.media = authentication.refresh_token(
                 access_token, refresh_token
             )
             resp.status = HTTP_OK

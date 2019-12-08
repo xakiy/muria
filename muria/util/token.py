@@ -5,7 +5,7 @@ import time
 import base64
 from datetime import datetime, timedelta
 from calendar import timegm
-from muria.db.model import User, BasicToken
+from muria.db.model import User, BearerToken
 from pony.orm import db_session
 from muria.util.misc import generate_chars as _generator
 from muria.common.error import (
@@ -69,11 +69,11 @@ class BaseToken(object):
         raise NotImplementedError()
 
 
-class TokenBasic(BaseToken):
+class TokenBearer(BaseToken):
     """Token with basic generated code."""
 
-    TOKEN_TYPE = "basic"
-    TOKEN_NAME = "token_basic"
+    TOKEN_TYPE = "bearer"
+    TOKEN_NAME = "token_bearer"
 
     def __init__(self, config, token_refresh_expire=4):
         self.config = config
@@ -96,14 +96,14 @@ class TokenBasic(BaseToken):
             refresh_token = self._generate_token(self.token_refresh_length)
 
             # make sure that we create very unique token pair
-            while BasicToken.exists(
+            while BearerToken.exists(
                 lambda t: t.access_token == access_token or
                 t.refresh_token == refresh_token
             ):
                 access_token = self._generate_token()
                 refresh_token = self._generate_token(self.token_refresh_length)
 
-            token = BasicToken(
+            token = BearerToken(
                 token_type=self.TOKEN_TYPE,
                 access_token=access_token,
                 refresh_token=refresh_token,
@@ -119,7 +119,7 @@ class TokenBasic(BaseToken):
         if not self.is_token(token):
             raise InvalidTokenError()
 
-        basic_token = BasicToken.get(
+        basic_token = BearerToken.get(
             access_token=token,
             token_type=self.TOKEN_TYPE
         )
@@ -142,7 +142,7 @@ class TokenBasic(BaseToken):
         if not self.is_token(access_token):
             raise InvalidTokenError()
 
-        old_token = BasicToken.get(
+        old_token = BearerToken.get(
             access_token=access_token,
             token_type=self.TOKEN_TYPE
         )
@@ -178,7 +178,7 @@ class TokenBasic(BaseToken):
         if not self.is_token(token):
             raise InvalidTokenError()
 
-        basic_token = BasicToken.get(
+        basic_token = BearerToken.get(
             access_token=token,
             token_type=self.TOKEN_TYPE
         )
