@@ -3,7 +3,6 @@
 import pytest
 from falcon import testing
 from muria.init import config
-from tests import config_file  # initiating env setup
 from muria.wsgi import app
 from muria.db.model import User
 from pony.orm import db_session

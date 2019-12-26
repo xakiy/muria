@@ -1,7 +1,7 @@
 """Authentication Resource."""
 
 from muria.common.resource import Resource
-from muria.init import authentication, DEBUG
+from muria.init import oauth, authentication, DEBUG
 from pony.orm import db_session
 from muria.util.token import extract_auth_header
 from falcon import (
@@ -79,7 +79,7 @@ class Authentication(Resource):
                 description: Acquire basic token
                 schema: BearerToken
             400:
-                description: Bad request dou to invalid credentials
+                description: Bad request due to invalid credentials
         """
         if req.media:
                 token = authentication.authenticate_user(
@@ -106,8 +106,14 @@ class Verification(Resource):
 
     Verifies submitted access_token or refresh_token
     """
-
+    # @oauth.protect
     def on_post(self, req, resp, **params):
+        # BUGS:
+        # After through some function decorations this function
+        # will received modified req argument, and will lose
+        # req.media original object, therefore calling
+        # req.media will result None.
+
         # TODO:
         # implement some cache validations on the user
         """Token verification
@@ -142,9 +148,11 @@ class Verification(Resource):
                 description: Verified token
                 schema: BearerToken
             400:
-                description: Bad request dou to invalid access token
+                description: Bad request due to invalid access token
         """
-
+        # valid, oauth_req = oauth.verify_request(req, None)
+        # foo = req._get_wrapped_wsgi_input()
+        # print('Inside AUTH: ', valid, foo.read())
         if req.media:
             token = authentication.check_token(
                 req.media.get("access_token", "")
@@ -198,7 +206,7 @@ class Refresh(Resource):
                 description: Refreshed token
                 schema: BearerToken
             400:
-                description: Bad request dou to invalid token pair
+                description: Bad request due to invalid token pair
         """
         if req.media:
             access_token = req.media.get("access_token", "")

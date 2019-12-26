@@ -139,19 +139,16 @@ class Users(Resource):
 
         # this will prevent data duplication but seems
         # it will take some times
-        password = data.pop('password')
-        if User.exists(**data):
+        if User.exists(username=data["username"], email=data["email"]):
             raise HTTPConflict()
 
         try:
-            # create salt and hashed password
-            data['salt'], data['password'] = \
-                User.create_salted_password(password)
             user = User(**data)
             flush()
             resp.media = user.unload()
             resp.status = HTTP_CREATED
         except Exception:
+            # TODO: log here internally
             # this would rarely hit
             raise HTTPInternalServerError(description="Database Error")
 

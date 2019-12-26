@@ -3,7 +3,7 @@ import uuid
 import hashlib
 import binascii
 from os import urandom
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from .mixin import EntityMixin
 from pony.orm import (
     Database,
@@ -21,7 +21,7 @@ db = connection = Database()
 class User(db.Entity, EntityMixin):
     # We store uuid in string column instead of binary
     # to simplify object instantiation and lookup
-    id = PrimaryKey(str, 36, default=str(uuid.uuid4()))
+    id = PrimaryKey(str, 36, default=lambda: str(uuid.uuid4()))
     nama = Required(str)
     jinshi = Optional(str, 1)
     tempat_lahir = Optional(str, 60)
@@ -31,7 +31,7 @@ class User(db.Entity, EntityMixin):
     situs = Optional(str, default="")
     email = Required(str, 60, unique=True)
     password = Required(str)
-    salt = Required(str)
+    salt = Optional(str)
     suspended = Required(bool, default=False)
     tokens = Set("BaseToken")
     clients = Set("Client")
@@ -63,6 +63,9 @@ class User(db.Entity, EntityMixin):
     def check_password(self, password):
         salt_bin = binascii.unhexlify(self.salt)
         return self.password == self.hash_password(password, salt_bin)
+
+    def before_insert(self):
+        self.salt, self.password = self.create_salted_password(self.password)
 
 
 class Client(db.Entity):
@@ -110,7 +113,11 @@ class BaseToken(db.Entity):
     revoked = Required(bool, default=False)
     issued_at = Optional(int, default=lambda: int(time.time()))
     expires_in = Optional(int, default=300)
-    expires = Optional(date)
+    expires = Required(
+        datetime,
+        default=lambda: datetime.now(timezone.utc) + timedelta(minutes=5),
+        sql_type='TIMESTAMP WITH TIME ZONE'
+    )
     scope = Optional(str, default="")
     user = Required("User")
 

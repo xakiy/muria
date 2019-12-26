@@ -171,7 +171,6 @@ class TestAuth:
 
     def test_post_valid_credentials_as_basic_auth(self, client, request):
         # post credential as Basic Auth
-        headers = self.headers
 
         # login with valid credentials
         credentials = ":".join([self.user.username, self.password_string])
@@ -179,12 +178,12 @@ class TestAuth:
         auth_string = "Basic %s" % \
             base64.encodebytes(bytes(credentials, 'utf8'))[:-1].decode('utf8')
 
-        headers.update(
-            {"AUTHORIZATION": auth_string}
+        self.headers.update(
+            {"Authorization": auth_string}
         )
         resp = client.simulate_post(
             path=self.url,
-            headers=headers,
+            headers=self.headers,
             protocol=self.scheme,
         )
 
@@ -228,6 +227,7 @@ class TestAuth:
         access_token = request.config.cache.get("access_token", None)
 
         payload = {"access_token": access_token}
+        self.headers.update({'Authorization': 'Bearer ' + access_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
