@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .token import BaseToken
+from muria.db.model import User
 
 
 class AuthMiddleware(object):
@@ -55,4 +56,8 @@ class AuthMiddleware(object):
                 req.method in auth_setting['exempt_methods']):
             return
         token = auth_setting['token']
-        req.context.user = token.unload(token.parse_token_header(req))
+        # TODO:
+        # user_id verification is probably needed here
+        payload = token.unload(token.parse_token_header(req))
+        if payload.get("id"):
+            req.context.user = payload

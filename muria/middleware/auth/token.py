@@ -126,13 +126,13 @@ class JwtToken(BaseToken):
                                  audience=self.audience)
         except jwt.JWTError as ex:
             raise HTTPUnauthorized(
-                description=str(ex))
+                description=str('bbb'))
 
         return payload
 
-    def unload(self, token, **kwargs):
+    def unload(self, token, options={}):
         """Unload jwt token value."""
-        decoded = self.verify_token(token, kwargs)
+        decoded = self.verify_token(token, options)
         token_value = self.unloader(decoded)
         if not token_value:
             raise HTTPUnauthorized(
