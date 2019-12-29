@@ -1,8 +1,9 @@
 """Authentication Test."""
 
+import time
 import pytest
 import base64
-from muria.init import DEBUG, authentication
+from muria.init import DEBUG
 # from muria.util.json import dumpAsJSON
 from urllib import parse
 from muria.util.misc import generate_chars
@@ -161,13 +162,8 @@ class TestAuth:
             protocol=self.scheme,
         )
 
-        access_token = resp.json.get("access_token")
-
         # should get OK
         assert resp.status == HTTP_OK
-
-        # should pass
-        assert access_token == authentication.check_token(access_token)
 
     def test_post_valid_credentials_as_basic_auth(self, client, request):
         # post credential as Basic Auth
@@ -192,9 +188,6 @@ class TestAuth:
         # should get OK
         assert resp.status == HTTP_OK
 
-        # should equal
-        assert access_token == authentication.check_token(access_token)
-
     def test_post_verify_without_access_token(self, client, request):
 
         # no access_token payload
@@ -205,7 +198,7 @@ class TestAuth:
         )
 
         # should get BAD REQUEST
-        assert resp.status == HTTP_BAD_REQUEST
+        assert resp.status == HTTP_UNAUTHORIZED
 
         # empty dict
         payload = {}
@@ -217,10 +210,10 @@ class TestAuth:
             protocol=self.scheme,
         )
 
-        # should get BAD REQUEST
-        assert resp.status == HTTP_BAD_REQUEST
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
 
-    def test_post_verify_valid_access_token(self, client, request):
+    def test_post_verify_valid_access_token_wrong_prefix(self, client, request):
         # Veriy token whether it is valid or not
 
         # get cached token from previous login
@@ -232,6 +225,23 @@ class TestAuth:
         resp = client.simulate_post(
             path=self.url + "/verify",
             json=payload,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
+
+    def test_post_verify_valid_access_token(self, client, request):
+        # Veriy token whether it is valid or not
+
+        # get cached token from previous login
+        access_token = request.config.cache.get("access_token", None)
+
+        self.headers.update({'Authorization': 'JWT ' + access_token})
+
+        resp = client.simulate_post(
+            path=self.url + "/verify",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -248,24 +258,10 @@ class TestAuth:
         # tamper the token
         broken_token = access_token[:-2]
 
-        payload = {"access_token": broken_token}
+        self.headers.update({'Authorization': 'JWT ' + broken_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
-            json=payload,
-            headers=self.headers,
-            protocol=self.scheme,
-        )
-
-        # should get UNAUTHORIZED
-        assert resp.status == HTTP_UNAUTHORIZED
-
-        # not token
-        payload = {"not_token": "aiou"}
-
-        resp = client.simulate_post(
-            path=self.url + "/verify",
-            json=payload,
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -275,6 +271,9 @@ class TestAuth:
 
     def test_post_refresh_valid_token_pair(self, client, request):
 
+        # do sleep to prevent token generation collision
+        time.sleep(1)
+
         cached_access_token = request.config.cache.get("access_token", None)
         cached_refresh_token = request.config.cache.get("refresh_token", None)
 
@@ -283,6 +282,8 @@ class TestAuth:
             "access_token": cached_access_token,
             "refresh_token": cached_refresh_token
         }
+
+        self.headers.pop('Authorization')
 
         resp = client.simulate_post(
             path=self.url + "/refresh",
@@ -356,8 +357,8 @@ class TestAuth:
             protocol=self.scheme,
         )
 
-        # should get UNAUTHORIZED
-        assert resp.status == HTTP_UNAUTHORIZED
+        # should get BAD_REQUEST
+        assert resp.status == HTTP_BAD_REQUEST
 
     def test_post_refresh_with_payload(self, client, request):
 

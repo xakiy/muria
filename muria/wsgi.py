@@ -2,9 +2,9 @@
 
 from . import name, version
 from falcon import API
-from muria.init import DEBUG, logger
+from muria.init import config, logger, DEBUG
 from muria.handler import extra_handlers
-from muria.plugins import middleware_list
+from muria.middler import Middlewares
 from muria.route import base_path, static_route, resource_route
 
 
@@ -18,7 +18,9 @@ if DEBUG:
 
     logger.debug("Initto...!")
 
-app = application = API(middleware=middleware_list)
+middlewares = Middlewares(config)
+
+app = application = API(middleware=middlewares())
 
 if not app.req_options.auto_parse_form_urlencoded:
     # form data can be accessed via req.media

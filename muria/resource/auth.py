@@ -1,13 +1,31 @@
 """Authentication Resource."""
 
 from muria.common.resource import Resource
-from muria.init import oauth, authentication, DEBUG
 from pony.orm import db_session
-from muria.util.token import extract_auth_header
+from muria.db.model import User
+from muria.db.schema import Credentials
+from muria.middleware.auth import JwtToken
+from datetime import datetime
+import base64
 from falcon import (
     HTTP_OK,
-    HTTPBadRequest
+    HTTPBadRequest,
+    HTTPUnprocessableEntity,
+    HTTPUnauthorized
 )
+
+
+def refresh_token_factory(config):
+    return JwtToken(
+        unloader=lambda payload: payload.get("data"),
+        secret_key=config.get("security", "secret_key"),
+        algorithm=config.get("security", "algorithm"),
+        leeway=0,
+        expiration_delta=config.getint(
+            "security", "refresh_token_exp"),
+        audience=config.get("security", "audience"),
+        issuer=config.get("security", "issuer")
+    )
 
 
 class Authentication(Resource):
@@ -15,6 +33,23 @@ class Authentication(Resource):
 
     Authenticate user with their credentials and issues token for them.
     """
+
+    def get_auth_header(self, auth_header, prefix):
+        parts = auth_header.split()
+        if parts[0].lower() != prefix:
+            raise HTTPUnauthorized(
+                description='Invalid Authentication Header: '
+                'Must start with `basic`')
+        elif len(parts) == 1:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: Token Missing')
+        elif len(parts) > 2:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: '
+                'Contains extra content')
+        decoded = base64.urlsafe_b64decode(parts[1]).decode('utf8')
+        # return tuple of username and password
+        return decoded.split(':')
 
     @db_session
     def on_get(self, req, resp):
@@ -37,7 +72,7 @@ class Authentication(Resource):
 
         resp.status = HTTP_OK
         resp.set_header("WWW-Authenticate", "Bearer")
-        if DEBUG:
+        if self.config.getboolean("app", "debug"):
             resp.media = {"Ping": "Pong"}
 
     @db_session
@@ -82,23 +117,48 @@ class Authentication(Resource):
                 description: Bad request due to invalid credentials
         """
         if req.media:
-                token = authentication.authenticate_user(
-                    username=req.media.get("username", ""),
-                    password=req.media.get("password", "")
-                )
-        elif req.headers.get("AUTHORIZATION"):
-            username, password = extract_auth_header(
-                req.headers.get("AUTHORIZATION", "")
-            )
-            token = authentication.authenticate_user(
-                username=username,
-                password=password
-            )
+            username = req.media.get("username", "")
+            password = req.media.get("password", "")
+
+        elif req.get_header("AUTHORIZATION"):
+            username, password = self.get_auth_header(
+                req.get_header('AUTHORIZATION'), prefix='basic')
         else:
             raise HTTPBadRequest()
 
+        errors = Credentials().validate(
+            {"username": username, "password": password}
+        )
+        if errors:
+            raise HTTPUnprocessableEntity(
+                code=88810,  # unprocessable creds either blank or invalid
+                title="Authentication Failure",
+                description=str(errors)
+            )
+
+        user = User.authenticate(username=username, password=password)
+        if not user:
+            raise HTTPUnauthorized(
+                code=88811,  # credentials received but invalid
+                title="Authentication Failure",
+                description="Invalid credentials"
+            )
+
+        # TODO: use rbac caching system for fast lookup of payload
+        now = datetime.utcnow()
+        data = {"id": user.get_user_id()}
+        jwt = self.config.tokenizer.create_token(data)
+        jwt_sig = jwt.split(".")[2]
+        factory = refresh_token_factory(self.config)
+        refresh_token = factory.create_token({"jwt_sig": jwt_sig})
+        resp.media = {
+            "token_type": "JWT",
+            "access_token": jwt,
+            "expires_in": self.config.getint("security", "access_token_exp"),
+            "issued_at": now,
+            "refresh_token": refresh_token
+        }
         resp.status = HTTP_OK
-        resp.media = token
 
 
 class Verification(Resource):
@@ -106,14 +166,8 @@ class Verification(Resource):
 
     Verifies submitted access_token or refresh_token
     """
-    # @oauth.protect
-    def on_post(self, req, resp, **params):
-        # BUGS:
-        # After through some function decorations this function
-        # will received modified req argument, and will lose
-        # req.media original object, therefore calling
-        # req.media will result None.
 
+    def on_post(self, req, resp, **params):
         # TODO:
         # implement some cache validations on the user
         """Token verification
@@ -150,16 +204,11 @@ class Verification(Resource):
             400:
                 description: Bad request due to invalid access token
         """
-        # valid, oauth_req = oauth.verify_request(req, None)
-        # foo = req._get_wrapped_wsgi_input()
-        # print('Inside AUTH: ', valid, foo.read())
-        if req.media:
-            token = authentication.check_token(
-                req.media.get("access_token", "")
-            )
-            content = {"access_token": token}
+
+        if hasattr(req.context, 'user'):
+            header = req.get_header('AUTHORIZATION')
             resp.status = HTTP_OK
-            resp.media = content
+            resp.media = {"access_token": header.split()[1]}
         else:
             raise HTTPBadRequest()
 
@@ -169,6 +218,9 @@ class Refresh(Resource):
 
     Replace an old token with new one.
     """
+    auth = {
+        'auth_disabled': True
+    }
 
     def on_post(self, req, resp, **params):
         """Token refresh
@@ -208,12 +260,36 @@ class Refresh(Resource):
             400:
                 description: Bad request due to invalid token pair
         """
-        if req.media:
-            access_token = req.media.get("access_token", "")
-            refresh_token = req.media.get("refresh_token", "")
-            resp.media = authentication.refresh_token(
-                access_token, refresh_token
-            )
-            resp.status = HTTP_OK
+        if req.media and req.media.get("access_token") \
+                and req.media.get("refresh_token"):
+            # TODO:
+            # 1. use caching system for invalidate previous jwt token
+            # 2. implement rate limiting to prevent DDoS
+
+            # extract wannabe expired token
+            old_token = req.media.get("access_token")
+            old_payload = self.config.tokenizer.unload(
+                old_token, options={'verify_exp': False})
+            # verify supplied refresh token
+            old_refresh_token = req.media.get("refresh_token")
+            refresh_factory = refresh_token_factory(self.config)
+            old_refresh_payload = refresh_factory.unload(
+                old_refresh_token)
+
+            if old_payload and old_refresh_payload:
+                now = datetime.utcnow()
+                jwt = self.config.tokenizer.create_token(old_payload)
+                jwt_sig = jwt.split(".")[2]
+                refresh = refresh_factory.create_token(
+                    {"jwt_sig": jwt_sig})
+                resp.media = {
+                    "token_type": "JWT",
+                    "access_token": jwt,
+                    "expires_in": self.config.getint(
+                        "security", "access_token_exp"),
+                    "issued_at": now,
+                    "refresh_token": refresh
+                }
+                resp.status = HTTP_OK
         else:
             raise HTTPBadRequest()

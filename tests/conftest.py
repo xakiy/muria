@@ -40,8 +40,8 @@ def properties(request):
         "username": "rijalul.ghad",
         "situs": "https://somesite.com",
         "email": "rijalul.ghad@gmail.com",
-        "password": hashed,
-        "salt": salt,
+        "password": password_string,
+        "salt": '',
         "suspended": False,
     }
 

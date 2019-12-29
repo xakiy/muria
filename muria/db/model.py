@@ -34,8 +34,6 @@ class User(db.Entity, EntityMixin):
     salt = Optional(str)
     suspended = Required(bool, default=False)
     tokens = Set("BaseToken")
-    clients = Set("Client")
-    grants = Set("Grant")
 
     def get_user_id(self):
         return self.id
@@ -64,45 +62,16 @@ class User(db.Entity, EntityMixin):
         salt_bin = binascii.unhexlify(self.salt)
         return self.password == self.hash_password(password, salt_bin)
 
+    @classmethod
+    def authenticate(cls, username, password):
+        user = cls.get(username=username)
+        if user and user.check_password(password):
+            return user
+        else:
+            return None
+
     def before_insert(self):
         self.salt, self.password = self.create_salted_password(self.password)
-
-
-class Client(db.Entity):
-
-    GRANT_TYPES = {
-        ('authorization_code', 'Authorization Code'),
-        ('implicit', 'Implicit'),
-        ('password', 'Resource Wwner Password Credentials'),
-        ('client_credentials', 'Client Credentials')
-    }
-
-    id = PrimaryKey(int, size=64, auto=True)
-    user = Required("User")
-    grant = Optional("Grant")
-    client_id = Required(str, 48, index=True)
-    client_secret = Optional(str, 120, index=True, unique=True)
-    name = Required(str, 100)
-    _redirect_uris = Optional(str)
-    _default_scope = Optional(str, default="profile")
-    grant_type = Required(str, default="password")
-    is_confidential = Required(bool, default=False)
-
-    @property
-    def default_redirect_uri(self):
-        return self.redirect_uris[0] if self.redirect_uris else None
-
-    @property
-    def allowed_grant_types(self):
-        return [id for id, name in self.GRANT_TYPES]
-
-    @property
-    def redirect_uris(self):
-        return self._redirect_uris.split(",")
-
-    @property
-    def default_scopes(self):
-        return self._default_scopes.split()
 
 
 class BaseToken(db.Entity):
@@ -160,17 +129,3 @@ class BaseToken(db.Entity):
 
 class BearerToken(BaseToken, EntityMixin):
     _discriminator_ = "bearer"
-
-
-class Grant(db.Entity):
-    user = Required("User")
-    client = Required("Client")
-    code = Required(str, index=True)
-    redirect_uri = Optional(str)
-    scope = Optional(str)
-    issued_at = Optional(int, default=lambda: int(time.time()))
-    expires_in = Optional(int, default=0)
-
-    @property
-    def scopes(self):
-        return self.scope.split() if self.scope else None

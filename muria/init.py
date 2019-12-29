@@ -3,8 +3,7 @@
 from muria.util.setting import Parser
 from muria.db.manager import setup_database
 from muria.util.logger import Logger
-from muria.util.auth import Authentication
-from falcon_oauth.provider.oauth2 import OAuthProvider
+from muria.middleware.auth import JwtToken
 
 # MURIA_SETUP merupakan env yang menunjuk ke berkas
 # konfigurasi produksi atau pengembangan.
@@ -17,13 +16,14 @@ logger = Logger(config).getLogger()
 
 setup_database(config)
 
-authentication = Authentication(config)
-
-oauth = OAuthProvider(
-    clientgetter=authentication.get_client,
-    usergetter=authentication.get_user,
-    tokengetter=authentication.get_token,
-    tokensetter=authentication.set_token,
-    grantgetter=authentication.get_grant,
-    grantsetter=authentication.set_grant
+jwt_token = JwtToken(
+    unloader=lambda payload: payload.get("data"),
+    secret_key=config.get("security", "secret_key"),
+    algorithm=config.get("security", "algorithm"),
+    leeway=0,
+    expiration_delta=config.getint("security", "access_token_exp"),
+    audience=config.get("security", "audience"),
+    issuer=config.get("security", "issuer")
 )
+
+config.tokenizer = jwt_token

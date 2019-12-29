@@ -41,7 +41,10 @@ def another_user(request):
 class TestUsers():
 
     @db_session
-    def test_post_user_with_no_payload(self, client):
+    def test_post_user_with_no_payload(self, client, request):
+
+        access_token = request.config.cache.get("access_token", None)
+        self.headers.update({'Authorization': 'JWT ' + access_token})
         # post no payload
         resp = client.simulate_post(
             path=self.url,
@@ -192,7 +195,10 @@ class TestUsers():
 @pytest.mark.usefixtures("client", "url", "properties", "another_user")
 class TestUserDetail():
 
-    def test_get_user_with_invalid_uuid(self, client):
+    def test_get_user_with_invalid_uuid(self, client, request):
+
+        access_token = request.config.cache.get("access_token", None)
+        self.headers.update({'Authorization': 'JWT ' + access_token})
         # with invalid uuid
         resp = client.simulate_get(
             path=self.url + '/%s' % self.user.id[:-2] + generate_chars(2),
@@ -202,7 +208,10 @@ class TestUserDetail():
         # should get NOT_FOUND
         assert resp.status == HTTP_NOT_FOUND
 
-    def test_get_user_with_random_uuid(self, client):
+    def test_get_user_with_random_uuid(self, client, request):
+
+        access_token = request.config.cache.get("access_token", None)
+        self.headers.update({'Authorization': 'JWT ' + access_token})
         # with random uuid
         resp = client.simulate_get(
             path=self.url + '/%s' % str(uuid.uuid4()),
