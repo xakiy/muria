@@ -1,26 +1,30 @@
 language: python
-python:
-  - '3.5'
-  - '3.6'
-  - '3.7'
+
 stages:
   - test
-matrix:
-  include:
-    - python: '3.5'
-    - env: TEST_SESSION=py3.5
-    - python: '3.6'
-    - env: TEST_SESSION=py3.6
-    - python: '3.7'
-    - env: TEST_SESSION=py3.7
+  
 before_install:
   - sudo apt-get update -qq
+
 install:
   - sudo apt-get install -y -qq sqlite3 libsqlite3-dev
   - pip install --upgrade pip
-  - pip install -r requirement-devel.txt
+  - pip install -r requirement-dev.txt
+
+matrix:
+  include:
+    - python: pypy3.5-6.0
+      env: TEST=pypy3
+    - python: 3.5
+      env: TEST=py3.5
+    - python: 3.6
+      env: TEST=py3.6
+    - python: 3.7
+      env: TEST=py3.7
+
 script:
   - coverage run -m pytest tests -vv
+
 after_success:
   - coverage report -m
 
