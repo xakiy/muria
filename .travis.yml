@@ -23,7 +23,12 @@ matrix:
       env: TEST=py3.7
 
 script:
-  - coverage run -m pytest tests -vv
+  - if [ "${TEST}" == 'pypy3' ]; then
+      OPTIONS = '-p no:faulthandler'
+    else
+      OPTIONS = ''
+    fi;
+  - coverage run -m pytest $OPTIONS tests -vv
 
 after_success:
   - coverage report -m
