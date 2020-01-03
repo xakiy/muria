@@ -13,8 +13,6 @@ install:
 
 matrix:
   include:
-    - python: pypy3.5-7.0
-      env: TEST=pypy3
     - python: 3.5
       env: TEST=py3.5
     - python: 3.6
@@ -23,12 +21,7 @@ matrix:
       env: TEST=py3.7
 
 script:
-  - if [ "${TEST}" == 'pypy3' ]; then
-      OPTIONS='-q -p no:faulthandler'
-    else
-      OPTIONS=''
-    fi;
-  - coverage run -m pytest $OPTIONS tests -vv
+  - coverage run -m pytest tests -vv
 
 after_success:
   - coverage report -m
