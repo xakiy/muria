@@ -2,7 +2,7 @@ language: python
 
 stages:
   - test
-  
+
 before_install:
   - sudo apt-get update -qq
 
