@@ -24,9 +24,9 @@ matrix:
 
 script:
   - if [ "${TEST}" == 'pypy3' ]; then
-      OPTIONS = '-p no:faulthandler'
+      OPTIONS='-q -p no:faulthandler'
     else
-      OPTIONS = ''
+      OPTIONS=''
     fi;
   - coverage run -m pytest $OPTIONS tests -vv
 
