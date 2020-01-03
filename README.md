@@ -1,6 +1,8 @@
 Muria
 =====
 
+[![Build Status](https://travis-ci.com/xakiy/muria.svg?branch=master)](https://travis-ci.org/xakiy/muria) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Falcon boilerplate for API development with pony ORM
 
 Instalasi
@@ -36,3 +38,4 @@ $gunicorn --reload muria.wsgi:app
 Kontribusi
 ----------
 Aplikasi masih dalam pengembangan intensif, bila Anda berminat untuk berkontribusi silahkan ajukan PR.
+
