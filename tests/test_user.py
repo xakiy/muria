@@ -2,6 +2,7 @@
 
 import uuid
 import pytest
+from muria.init import config
 from pony.orm import db_session
 from muria.util.misc import generate_chars
 from falcon import (
@@ -44,7 +45,8 @@ class TestUsers():
     def test_post_user_with_no_payload(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        self.headers.update({'Authorization': 'JWT ' + access_token})
+        prefix = config.get('security', 'token_header_prefix')
+        self.headers.update({'Authorization': prefix + ' ' + access_token})
         # post no payload
         resp = client.simulate_post(
             path=self.url,
@@ -198,7 +200,8 @@ class TestUserDetail():
     def test_get_user_with_invalid_uuid(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        self.headers.update({'Authorization': 'JWT ' + access_token})
+        prefix = config.get('security', 'token_header_prefix')
+        self.headers.update({'Authorization': prefix + ' ' + access_token})
         # with invalid uuid
         resp = client.simulate_get(
             path=self.url + '/%s' % self.user.id[:-2] + generate_chars(2),
@@ -211,7 +214,8 @@ class TestUserDetail():
     def test_get_user_with_random_uuid(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        self.headers.update({'Authorization': 'JWT ' + access_token})
+        prefix = config.get('security', 'token_header_prefix')
+        self.headers.update({'Authorization': prefix + ' ' + access_token})
         # with random uuid
         resp = client.simulate_get(
             path=self.url + '/%s' % str(uuid.uuid4()),

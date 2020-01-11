@@ -20,7 +20,10 @@ def refresh_token_factory(config):
         unloader=lambda payload: payload.get("data"),
         secret_key=config.get("security", "secret_key"),
         algorithm=config.get("security", "algorithm"),
-        leeway=0,
+        token_header_prefix=config.get(
+            "security",
+            "refresh_token_header_prefix"),
+        leeway=config.getint("security", "token_leeway"),
         expiration_delta=config.getint(
             "security", "refresh_token_exp"),
         audience=config.get("security", "audience"),
@@ -50,30 +53,6 @@ class Authentication(Resource):
         decoded = base64.urlsafe_b64decode(parts[1]).decode('utf8')
         # return tuple of username and password
         return decoded.split(':')
-
-    @db_session
-    def on_get(self, req, resp):
-        """Ping like end-point.
-        ---
-        tags:
-        - auth
-        summary: Ping auth end-point
-        operationId: pingAuth
-        parameters:
-            - in: header
-              name: origin
-              type: string
-              required: true
-              description: CORS request origin
-        responses:
-            200:
-                description: Ping response
-        """
-
-        resp.status = HTTP_OK
-        resp.set_header("WWW-Authenticate", "Bearer")
-        if self.config.getboolean("app", "debug"):
-            resp.media = {"Ping": "Pong"}
 
     @db_session
     def on_post(self, req, resp):
@@ -147,13 +126,13 @@ class Authentication(Resource):
         # TODO: use rbac caching system for fast lookup of payload
         now = datetime.utcnow()
         data = {"id": user.get_user_id()}
-        jwt = self.config.tokenizer.create_token(data)
-        jwt_sig = jwt.split(".")[2]
+        token = self.config.tokenizer.create_token(data)
+        token_sig = token.split(".")[2]
         factory = refresh_token_factory(self.config)
-        refresh_token = factory.create_token({"jwt_sig": jwt_sig})
+        refresh_token = factory.create_token({"token_sig": token_sig})
         resp.media = {
-            "token_type": "JWT",
-            "access_token": jwt,
+            "token_type": self.config.get("security", "token_header_prefix"),
+            "access_token": token,
             "expires_in": self.config.getint("security", "access_token_exp"),
             "issued_at": now,
             "refresh_token": refresh_token
@@ -278,13 +257,15 @@ class Refresh(Resource):
 
             if old_payload and old_refresh_payload:
                 now = datetime.utcnow()
-                jwt = self.config.tokenizer.create_token(old_payload)
-                jwt_sig = jwt.split(".")[2]
+                token = self.config.tokenizer.create_token(old_payload)
+                token_sig = token.split(".")[2]
                 refresh = refresh_factory.create_token(
-                    {"jwt_sig": jwt_sig})
+                    {"token_sig": token_sig})
                 resp.media = {
-                    "token_type": "JWT",
-                    "access_token": jwt,
+                    "token_type": self.config.get(
+                        "security",
+                        "token_header_prefix"),
+                    "access_token": token,
                     "expires_in": self.config.getint(
                         "security", "access_token_exp"),
                     "issued_at": now,

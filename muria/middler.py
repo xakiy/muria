@@ -14,6 +14,7 @@ class Middlewares():
         auth_middleware = AuthMiddleware(
             config.tokenizer,
             exempt_routes=[
+                "/v1/ping",
                 "/v1/auth",
                 "/v1/auth/refresh"
             ],
@@ -35,8 +36,6 @@ class Middlewares():
                 "cors", "allow_all_methods"
             ),
             allow_methods_list=config.getlist("cors", "allow_methods_list"),
-            # response values sent to the Access-Control-Expose-Headers request
-            expose_headers_list=config.getlist("cors", "expose_headers_list"),
             # for preflight response
             allow_all_headers=config.getboolean(
                 "cors", "allow_all_headers"

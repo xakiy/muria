@@ -3,8 +3,7 @@
 import time
 import pytest
 import base64
-from muria.init import DEBUG
-# from muria.util.json import dumpAsJSON
+from muria.init import config
 from urllib import parse
 from muria.util.misc import generate_chars
 from falcon import (
@@ -22,19 +21,6 @@ def url(request):
 
 @pytest.mark.usefixtures("client", "url", "properties")
 class TestAuth:
-
-    def test_get_auth(self, client):
-
-        resp = client.simulate_get(
-            path=self.url,
-            headers=self.headers,
-            protocol=self.scheme
-        )
-
-        assert resp.status == HTTP_OK
-        assert resp.headers.get('www-authenticate') == 'Bearer'
-        if DEBUG:
-            assert resp.json == {"Ping": "Pong"}
 
     def test_post_no_credentials(self, client):
 
@@ -183,8 +169,6 @@ class TestAuth:
             protocol=self.scheme,
         )
 
-        access_token = resp.json.get("access_token")
-
         # should get OK
         assert resp.status == HTTP_OK
 
@@ -220,7 +204,7 @@ class TestAuth:
         access_token = request.config.cache.get("access_token", None)
 
         payload = {"access_token": access_token}
-        self.headers.update({'Authorization': 'Bearer ' + access_token})
+        self.headers.update({'Authorization': 'Badprefix ' + access_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -238,7 +222,8 @@ class TestAuth:
         # get cached token from previous login
         access_token = request.config.cache.get("access_token", None)
 
-        self.headers.update({'Authorization': 'JWT ' + access_token})
+        prefix = config.get('security', 'token_header_prefix')
+        self.headers.update({'Authorization': prefix + ' ' + access_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -258,7 +243,8 @@ class TestAuth:
         # tamper the token
         broken_token = access_token[:-2]
 
-        self.headers.update({'Authorization': 'JWT ' + broken_token})
+        prefix = config.get('security', 'token_header_prefix')
+        self.headers.update({'Authorization': prefix + ' ' + broken_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",

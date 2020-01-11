@@ -21,8 +21,7 @@ class BaseToken(object):
         """
         auth_header = req.get_header('Authorization')
         if not auth_header:
-            raise HTTPUnauthorized(
-                description='Missing Authorization Header')
+            raise HTTPUnauthorized()
 
         parts = auth_header.split()
 
@@ -54,15 +53,15 @@ class JwtToken(BaseToken):
     TOKEN_TYPE = "jwt"
 
     def __init__(self, unloader, secret_key,
-                 algorithm='HS256', token_header_prefix='jwt',
+                 algorithm, token_header_prefix,
                  leeway=0, expiration_delta=30 * 60,
                  issuer=None, audience=None, access_token=None,
                  verify_claims=None, required_claims=None):
 
         self.unloader = unloader
         self.secret_key = secret_key
-        self.algorithm = algorithm
-        self.token_header_prefix = token_header_prefix
+        self.algorithm = algorithm or 'HS256'
+        self.token_header_prefix = token_header_prefix or self.TOKEN_TYPE
         self.leeway = timedelta(seconds=leeway)
         self.expiration_delta = timedelta(seconds=expiration_delta)
         self.issuer = issuer
@@ -106,6 +105,32 @@ class JwtToken(BaseToken):
             algorithm=self.algorithm,
             access_token=self.access_token)
 
+    def parse_token_header(self, req):
+        """
+        Parses and returns Auth token from the request header. Raises
+        `falcon.HTTPUnauthoried exception` with proper error message
+        """
+        auth_header = req.get_header('Authorization')
+        if not auth_header:
+            raise HTTPUnauthorized()
+
+        parts = auth_header.split()
+
+        if parts[0].lower() != self.token_header_prefix.lower():
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: Must start with {0}'
+                .format(self.token_header_prefix),
+                challenges=[self.token_header_prefix])
+
+        elif len(parts) == 1:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: Token Missing')
+        elif len(parts) > 2:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: Content overflow')
+
+        return parts[1]
+
     def verify_token(self, token, options={}):
         """Decode jwt token payload."""
 
@@ -126,7 +151,9 @@ class JwtToken(BaseToken):
                                  audience=self.audience)
         except jwt.JWTError as ex:
             raise HTTPUnauthorized(
-                description=str('bbb'))
+                description=str(ex),
+                challenges=[self.token_header_prefix,
+                            'Options="authenticate, refresh"'])
 
         return payload
 
@@ -136,5 +163,7 @@ class JwtToken(BaseToken):
         token_value = self.unloader(decoded)
         if not token_value:
             raise HTTPUnauthorized(
-                description='Invalid JWT Credentials')
+                description='Invalid JWT Credentials',
+                challenges=[self.token_header_prefix,
+                            'Options="re-authenticate"'])
         return token_value
