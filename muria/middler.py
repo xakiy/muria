@@ -24,8 +24,9 @@ class Middlewares():
             ]
         )
 
+        cors_debug = config.getint("cors_log_level") if config.getboolean("api_debug") else 30
         cors = CORS(
-            log_level=config.getint("cors_log_level"),
+            log_level=cors_debug,
             # false means disallow any random host to connect
             allow_all_origins=config.getboolean("cors_allow_all_origins"),
             allow_origins_list=config.getlist("cors_allow_origins_list"),

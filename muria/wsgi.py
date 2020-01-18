@@ -8,12 +8,13 @@ from muria.middler import Middlewares
 from muria.route import base_path, static_route, resource_route
 
 
+print("---------------------------------")
+print("# API Name: %s" % config.get("api_name"))
+print("# API Version: v%s - Mode: %s" % (config.get("api_version"), config.get('api_mode')))
+print("# Engine: %s ver. %s - Copyright %s" % (name, version, author))
+print("---------------------------------")
+
 if DEBUG:
-    logger.debug("---------------------------------")
-    logger.debug("# API Name: %s" % config.get("api_name"))
-    logger.debug("# API Version: %s" % config.get("api_version"))
-    logger.debug("# Engine: %s ver. %s - Copyright %s" % (name, version, author))
-    logger.debug("---------------------------------")
     logger.debug("# WARNING: DEBUG MODE IS ACTIVE #")
     logger.debug("---------------------------------")
 

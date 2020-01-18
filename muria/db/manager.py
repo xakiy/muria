@@ -73,7 +73,9 @@ def setup_database(config, conection=connection):
     else:
         connection.bind(**params)
 
-    sql_debug(config.getboolean("db_verbose"))
+    verbose = config.getboolean("api_debug") and \
+        config.getboolean("db_verbose")
+    sql_debug(verbose)
     connection.generate_mapping(
         create_tables=config.getboolean("db_create_table")
     )

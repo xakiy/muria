@@ -29,6 +29,7 @@ class _Configuration(SafeConfigParser):
         self.api_mode = str(os.environ.get("mode", None))
         if self.api_mode not in self:
             self.api_mode = "TEST"
+        self.set("DEFAULT", "api_mode", self.api_mode)
         return self[self.api_mode]
 
     def getlist(self, section, option, delim=" ", **kwargs):
