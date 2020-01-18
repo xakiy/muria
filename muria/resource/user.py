@@ -63,7 +63,7 @@ class Users(Resource):
                 description: No user found
         """
 
-        max_limit = self.config.getint("app", "page_limit")
+        max_limit = self.config.getint("api_pagination_limit")
         count = int(req.params.get("count", 20))
 
         offset = int(req.params.get("index", 0))

@@ -18,16 +18,13 @@ from falcon import (
 def refresh_token_factory(config):
     return JwtToken(
         unloader=lambda payload: payload.get("data"),
-        secret_key=config.get("security", "secret_key"),
-        algorithm=config.get("security", "algorithm"),
-        token_header_prefix=config.get(
-            "security",
-            "refresh_token_header_prefix"),
-        leeway=config.getint("security", "token_leeway"),
-        expiration_delta=config.getint(
-            "security", "refresh_token_exp"),
-        audience=config.get("security", "audience"),
-        issuer=config.get("security", "issuer")
+        secret_key=config.get("jwt_secret_key"),
+        algorithm=config.get("jwt_algorithm"),
+        token_header_prefix=config.get("jwt_refresh_header_prefix"),
+        leeway=config.getint("jwt_leeway"),
+        expiration_delta=config.getint("jwt_refresh_exp"),
+        audience=config.get("jwt_audience"),
+        issuer=config.get("jwt_issuer")
     )
 
 
@@ -131,9 +128,9 @@ class Authentication(Resource):
         factory = refresh_token_factory(self.config)
         refresh_token = factory.create_token({"token_sig": token_sig})
         resp.media = {
-            "token_type": self.config.get("security", "token_header_prefix"),
+            "token_type": self.config.get("jwt_header_prefix"),
             "access_token": token,
-            "expires_in": self.config.getint("security", "access_token_exp"),
+            "expires_in": self.config.getint("jwt_token_exp"),
             "issued_at": now,
             "refresh_token": refresh_token
         }
@@ -262,12 +259,9 @@ class Refresh(Resource):
                 refresh = refresh_factory.create_token(
                     {"token_sig": token_sig})
                 resp.media = {
-                    "token_type": self.config.get(
-                        "security",
-                        "token_header_prefix"),
+                    "token_type": self.config.get("jwt_header_prefix"),
                     "access_token": token,
-                    "expires_in": self.config.getint(
-                        "security", "access_token_exp"),
+                    "expires_in": self.config.getint("jwt_token_exp"),
                     "issued_at": now,
                     "refresh_token": refresh
                 }

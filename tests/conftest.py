@@ -20,8 +20,8 @@ def properties(request):
     request.cls.scheme = "https"
 
     headers = {
-        "Host": config.get("security", "issuer"),
-        "Origin": config.get("security", "audience"),
+        "Host": config.get("jwt_issuer"),
+        "Origin": config.get("jwt_audience"),
     }
     request.cls.headers = headers
 

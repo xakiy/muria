@@ -32,7 +32,7 @@ def another_user(request):
         "username": "rijalul.akhor",
         "situs": "https://anothersite.com",
         "email": "rijalul.akhor@gmail.com",
-        "password": 'anothersecret',
+        "password": "anothersecret",
         "suspended": False,
     }
     request.cls.another_user = user
@@ -45,8 +45,8 @@ class TestUsers():
     def test_post_user_with_no_payload(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        prefix = config.get('security', 'token_header_prefix')
-        self.headers.update({'Authorization': prefix + ' ' + access_token})
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + access_token})
         # post no payload
         resp = client.simulate_post(
             path=self.url,
@@ -62,7 +62,7 @@ class TestUsers():
         data = self.another_user.copy()
 
         # tampered the data
-        data['username'] = 'unllowed-username'
+        data["username"] = "unllowed-username"
         # post new user
         resp = client.simulate_post(
             path=self.url,
@@ -74,7 +74,7 @@ class TestUsers():
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
 
         # tampered the data
-        data['username'] = 'un@llowed-username'
+        data["username"] = "un@llowed-username"
         # post new user
         resp = client.simulate_post(
             path=self.url,
@@ -86,7 +86,7 @@ class TestUsers():
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
 
         # tampered the data
-        data['jinshi'] = 'x'
+        data["jinshi"] = "x"
         # post new user
         resp = client.simulate_post(
             path=self.url,
@@ -108,7 +108,7 @@ class TestUsers():
         )
         # should be CREATED
         assert resp.status == HTTP_CREATED
-        assert resp.json.get('username') == self.another_user['username']
+        assert resp.json.get("username") == self.another_user["username"]
 
     @db_session
     def test_post_repost_user_with_valid_data(self, client):
@@ -125,7 +125,7 @@ class TestUsers():
     @db_session
     def test_get_user_with_incorrect_search(self, client):
 
-        username = uri.encode_value('random.name.you.can.imagine')
+        username = uri.encode_value("random.name.you.can.imagine")
 
         resp = client.simulate_get(
             path=self.url,
@@ -140,7 +140,7 @@ class TestUsers():
     @db_session
     def test_get_user_with_correct_search(self, client):
 
-        username = uri.encode_value(self.another_user['username'])
+        username = uri.encode_value(self.another_user["username"])
 
         resp = client.simulate_get(
             path=self.url,
@@ -151,7 +151,7 @@ class TestUsers():
 
         # should get OK
         assert resp.status == HTTP_OK
-        assert resp.json.get('count') == 1
+        assert resp.json.get("count") == 1
 
     @db_session
     def test_get_user_without_search(self, client):
@@ -166,7 +166,7 @@ class TestUsers():
         # assuming there were any users already populated in the db
         # this should get OK
         assert resp.status == HTTP_OK
-        assert resp.json.get('count') > 0
+        assert resp.json.get("count") > 0
 
     @db_session
     def test_get_user_with_valid_pagination(self, client):
@@ -180,7 +180,7 @@ class TestUsers():
 
         # assuming there were only 2 users already populated in the db
         assert resp.status == HTTP_OK
-        assert resp.json.get('count') == 1
+        assert resp.json.get("count") == 1
 
     @db_session
     def test_get_user_with_out_of_range_pagination(self, client):
@@ -200,11 +200,11 @@ class TestUserDetail():
     def test_get_user_with_invalid_uuid(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        prefix = config.get('security', 'token_header_prefix')
-        self.headers.update({'Authorization': prefix + ' ' + access_token})
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + access_token})
         # with invalid uuid
         resp = client.simulate_get(
-            path=self.url + '/%s' % self.user.id[:-2] + generate_chars(2),
+            path=self.url + "/%s" % self.user.id[:-2] + generate_chars(2),
             headers=self.headers,
             protocol=self.scheme
         )
@@ -214,11 +214,11 @@ class TestUserDetail():
     def test_get_user_with_random_uuid(self, client, request):
 
         access_token = request.config.cache.get("access_token", None)
-        prefix = config.get('security', 'token_header_prefix')
-        self.headers.update({'Authorization': prefix + ' ' + access_token})
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + access_token})
         # with random uuid
         resp = client.simulate_get(
-            path=self.url + '/%s' % str(uuid.uuid4()),
+            path=self.url + "/%s" % str(uuid.uuid4()),
             headers=self.headers,
             protocol=self.scheme
         )
@@ -229,7 +229,7 @@ class TestUserDetail():
     def test_get_user_with_correct_uuid(self, client):
         # with correct uuid
         resp = client.simulate_get(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme
         )
@@ -242,7 +242,7 @@ class TestUserDetail():
     def test_patch_user_with_random_uuid(self, client):
         # replace id with random uuid
         resp = client.simulate_patch(
-            path=self.url + '/%s' % str(uuid.uuid4()),
+            path=self.url + "/%s" % str(uuid.uuid4()),
             headers=self.headers,
             protocol=self.scheme
         )
@@ -255,10 +255,10 @@ class TestUserDetail():
         user = self.user.unload()
 
         # replace jinshi with invalid one
-        user['jinshi'] = 'x'
+        user["jinshi"] = "x"
 
         resp = client.simulate_patch(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme,
             json=user
@@ -266,7 +266,7 @@ class TestUserDetail():
 
         # should return unprocessable
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
-        assert resp.json.get('description').get('error').get('jinshi') \
+        assert resp.json.get("description").get("error").get("jinshi") \
             is not None
 
     @db_session
@@ -275,28 +275,28 @@ class TestUserDetail():
         user = self.user.unload()
 
         # replace date with invalid one
-        user['tanggal_masuk'] = "10-31-2019"
+        user["tanggal_masuk"] = "10-31-2019"
 
         resp = client.simulate_patch(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme,
             json=user
         )
-        # assert resp.json.get('description') == ''
+        # assert resp.json.get("description") == ""
         # should return unprocessable
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
-        assert resp.json.get('description').get('error').get('tanggal_masuk') \
+        assert resp.json.get("description").get("error").get("tanggal_masuk") \
             is not None
 
     @db_session
     def test_patch_user_with_additional_data(self, client):
         user = self.user.unload()
         # patch with additional unknown field
-        user['foo'] = 'bar'
+        user["foo"] = "bar"
 
         resp = client.simulate_patch(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme,
             json=user
@@ -322,7 +322,7 @@ class TestUserDetail():
         user.update(edited)
 
         resp = client.simulate_patch(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme,
             json=user
@@ -338,7 +338,7 @@ class TestUserDetail():
         user = self.user.unload()
 
         resp = client.simulate_patch(
-            path=self.url + '/%s' % self.user.id,
+            path=self.url + "/%s" % self.user.id,
             headers=self.headers,
             protocol=self.scheme,
             json=user
@@ -350,8 +350,8 @@ class TestUserDetail():
     @db_session
     def test_delete_user_with_correct_uuid(self, client):
 
-        # before we delete an user we need he's uid
-        username = uri.encode_value(self.another_user['username'])
+        # before we delete an user we need he"s uid
+        username = uri.encode_value(self.another_user["username"])
         resp = client.simulate_get(
             path=self.url,
             headers=self.headers,
@@ -362,11 +362,11 @@ class TestUserDetail():
         # should get OK
         assert resp.status == HTTP_OK
         # get the uid
-        uid = resp.json.get('users')[0].get('id')
-        # assert resp.json == ''
+        uid = resp.json.get("users")[0].get("id")
+        # assert resp.json == ""
 
         resp = client.simulate_delete(
-            path=self.url + '/%s' % uid,
+            path=self.url + "/%s" % uid,
             headers=self.headers,
             protocol=self.scheme
         )
@@ -376,7 +376,7 @@ class TestUserDetail():
 
         # try re-delete it
         resp = client.simulate_delete(
-            path=self.url + '/%s' % uid,
+            path=self.url + "/%s" % uid,
             headers=self.headers,
             protocol=self.scheme
         )

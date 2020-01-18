@@ -25,29 +25,23 @@ class Middlewares():
         )
 
         cors = CORS(
-            log_level=config.getint("cors", "log_level"),
+            log_level=config.getint("cors_log_level"),
             # false means disallow any random host to connect
-            allow_all_origins=config.getboolean(
-                "cors", "allow_all_origins"
-            ),
-            allow_origins_list=config.getlist("cors", "allow_origins_list"),
+            allow_all_origins=config.getboolean("cors_allow_all_origins"),
+            allow_origins_list=config.getlist("cors_allow_origins_list"),
             # allow all methods incl. custom ones are allowed via CORS requests
-            allow_all_methods=config.getboolean(
-                "cors", "allow_all_methods"
-            ),
-            allow_methods_list=config.getlist("cors", "allow_methods_list"),
+            allow_all_methods=config.getboolean("cors_allow_all_methods"),
+            allow_methods_list=config.getlist("cors_allow_methods_list"),
             # for preflight response
-            allow_all_headers=config.getboolean(
-                "cors", "allow_all_headers"
-            ),
-            allow_headers_list=config.getlist("cors", "allow_headers_list"),
+            allow_all_headers=config.getboolean("cors_allow_all_headers"),
+            allow_headers_list=config.getlist("cors_allow_headers_list"),
             allow_credentials_all_origins=config.getboolean(
-                "cors", "allow_credentials_all_origins"
+                "cors_allow_credentials_all_origins"
             ),
             allow_credentials_origins_list=config.getlist(
-                "cors", "allow_credentials_origins_list"
+                "cors_allow_credentials_origins_list"
             ),
-            max_age=config.getint("cors", "max_age"),
+            max_age=config.getint("cors_max_age"),
         )
 
         self.security_middlewares.append(RequireHTTPS())

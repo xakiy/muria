@@ -32,5 +32,5 @@ class Pong(Resource):
         if ping and ping.lower() == 'ping':
             resp.status = HTTP_OK
             resp.set_header("Ping", "Pong")
-            if self.config.getboolean("app", "debug"):
+            if self.config.getboolean("api_debug"):
                 resp.media = {"Ping": "Pong"}

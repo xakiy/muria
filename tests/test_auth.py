@@ -158,7 +158,7 @@ class TestAuth:
         credentials = ":".join([self.user.username, self.password_string])
 
         auth_string = "Basic %s" % \
-            base64.encodebytes(bytes(credentials, 'utf8'))[:-1].decode('utf8')
+            base64.encodebytes(bytes(credentials, "utf8"))[:-1].decode("utf8")
 
         self.headers.update(
             {"Authorization": auth_string}
@@ -204,7 +204,7 @@ class TestAuth:
         access_token = request.config.cache.get("access_token", None)
 
         payload = {"access_token": access_token}
-        self.headers.update({'Authorization': 'Badprefix ' + access_token})
+        self.headers.update({"Authorization": "Badprefix " + access_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -222,8 +222,8 @@ class TestAuth:
         # get cached token from previous login
         access_token = request.config.cache.get("access_token", None)
 
-        prefix = config.get('security', 'token_header_prefix')
-        self.headers.update({'Authorization': prefix + ' ' + access_token})
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + access_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -243,8 +243,8 @@ class TestAuth:
         # tamper the token
         broken_token = access_token[:-2]
 
-        prefix = config.get('security', 'token_header_prefix')
-        self.headers.update({'Authorization': prefix + ' ' + broken_token})
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + broken_token})
 
         resp = client.simulate_post(
             path=self.url + "/verify",
@@ -269,7 +269,7 @@ class TestAuth:
             "refresh_token": cached_refresh_token
         }
 
-        self.headers.pop('Authorization')
+        self.headers.pop("Authorization")
 
         resp = client.simulate_post(
             path=self.url + "/refresh",

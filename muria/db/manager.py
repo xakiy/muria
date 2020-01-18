@@ -15,45 +15,45 @@ def setup_database(config, conection=connection):
     # connection is imported from model
 
     params = dict()
-    params.update({"provider": config.get("database", "engine")})
+    params.update({"provider": config.get("db_engine")})
     # MySQL and PostgreSQL
     if params["provider"] in ("mysql", "postgres"):
         params.update(
             {
-                "host": config.get("database", "host"),
-                "user": config.get("database", "user"),
-                "db": config.get("database", "db"),
+                "host": config.get("db_host"),
+                "user": config.get("db_user"),
+                "db": config.get("db_db"),
             }
         )
         # mysql uses 'passwd' keyword argument instead of 'password'
         if params["provider"] == "mysql":
-            params.update({"passwd": config.get("database", "password")})
+            params.update({"passwd": config.get("db_password")})
         else:
             params.update(
-                {"password": config.get("database", "password")}
+                {"password": config.get("db_password")}
             )
         # use socket if available prior to TCP connection
-        if config.get("database", "socket"):
+        if config.get("db_socket"):
             params.update(
-                {"unix_socket": config.get("database", "socket")}
+                {"unix_socket": config.get("db_socket")}
             )
-        port = config.get("database", "port")
+        port = config.get("db_port")
         if port is not None and port.isnumeric():
             params.update({"port": int(port)})
     # SQLite
     elif params["provider"] == "sqlite":
-        params.update({"filename": config.get("database", "filename")})
+        params.update({"filename": config.get("db_filename")})
         if params["filename"] != ":memory:":
             params.update(
-                {"create_db": config.getboolean("database", "create_db")}
+                {"create_db": config.getboolean("db_create_db")}
             )
     # Oracle
     elif params["provider"] == "oracle":
         params.update(
             {
-                "user": config.get("database", "user"),
-                "password": config.get("database", "password"),
-                "dsn": config.get("database", "dsn"),
+                "user": config.get("db_user"),
+                "password": config.get("db_password"),
+                "dsn": config.get("db_dsn"),
             }
         )
 
@@ -73,9 +73,9 @@ def setup_database(config, conection=connection):
     else:
         connection.bind(**params)
 
-    sql_debug(config.getboolean("database", "verbose"))
+    sql_debug(config.getboolean("db_verbose"))
     connection.generate_mapping(
-        create_tables=config.getboolean("database", "create_table")
+        create_tables=config.getboolean("db_create_table")
     )
 
     # populate preload data if not exist
