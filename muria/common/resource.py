@@ -1,4 +1,4 @@
-from muria.init import config
+from muria import config
 
 
 class Resource(object):

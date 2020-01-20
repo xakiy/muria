@@ -2,9 +2,9 @@
 
 import pytest
 from falcon import testing
-from muria.init import config
+from muria import config
 from muria.wsgi import app
-from muria.db.model import User
+from muria.db import User
 from pony.orm import db_session
 
 

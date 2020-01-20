@@ -2,7 +2,7 @@
 
 import uuid
 import pytest
-from muria.init import config
+from muria import config
 from pony.orm import db_session
 from muria.util.misc import generate_chars
 from falcon import (

@@ -1,8 +1,9 @@
 """Authentication Resource."""
 
+from muria import config
 from muria.common.resource import Resource
 from pony.orm import db_session
-from muria.db.model import User
+from muria.db import User
 from muria.db.schema import Credentials
 from muria.middleware.auth import JwtToken
 from datetime import datetime
@@ -15,17 +16,28 @@ from falcon import (
 )
 
 
-def refresh_token_factory(config):
-    return JwtToken(
-        unloader=lambda payload: payload.get("data"),
-        secret_key=config.get("jwt_secret_key"),
-        algorithm=config.get("jwt_algorithm"),
-        token_header_prefix=config.get("jwt_refresh_header_prefix"),
-        leeway=config.getint("jwt_leeway"),
-        expiration_delta=config.getint("jwt_refresh_exp"),
-        audience=config.get("jwt_audience"),
-        issuer=config.get("jwt_issuer")
-    )
+jwt_tokenizer = JwtToken(
+    unloader=lambda payload: payload.get("data"),
+    secret_key=config.get("jwt_secret_key"),
+    algorithm=config.get("jwt_algorithm"),
+    token_header_prefix=config.get("jwt_header_prefix"),
+    leeway=config.getint("jwt_leeway"),
+    expiration_delta=config.getint("jwt_token_exp"),
+    audience=config.get("jwt_audience"),
+    issuer=config.get("jwt_issuer")
+)
+
+
+jwt_refresh_tokenizer = JwtToken(
+    unloader=lambda payload: payload.get("data"),
+    secret_key=config.get("jwt_secret_key"),
+    algorithm=config.get("jwt_algorithm"),
+    token_header_prefix=config.get("jwt_refresh_header_prefix"),
+    leeway=config.getint("jwt_leeway"),
+    expiration_delta=config.getint("jwt_refresh_exp"),
+    audience=config.get("jwt_audience"),
+    issuer=config.get("jwt_issuer")
+)
 
 
 class Authentication(Resource):
@@ -123,10 +135,9 @@ class Authentication(Resource):
         # TODO: use rbac caching system for fast lookup of payload
         now = datetime.utcnow()
         data = {"id": user.get_user_id()}
-        token = self.config.tokenizer.create_token(data)
-        token_sig = token.split(".")[2]
-        factory = refresh_token_factory(self.config)
-        refresh_token = factory.create_token({"token_sig": token_sig})
+        token = jwt_tokenizer.create_token(data)
+        signature = {"token_sig": token.split(".")[2]}
+        refresh_token = jwt_refresh_tokenizer.create_token(signature)
         resp.media = {
             "token_type": self.config.get("jwt_header_prefix"),
             "access_token": token,
@@ -244,20 +255,19 @@ class Refresh(Resource):
 
             # extract wannabe expired token
             old_token = req.media.get("access_token")
-            old_payload = self.config.tokenizer.unload(
+            old_payload = jwt_tokenizer.unload(
                 old_token, options={'verify_exp': False})
             # verify supplied refresh token
             old_refresh_token = req.media.get("refresh_token")
-            refresh_factory = refresh_token_factory(self.config)
-            old_refresh_payload = refresh_factory.unload(
+            old_refresh_payload = jwt_refresh_tokenizer.unload(
                 old_refresh_token)
 
             if old_payload and old_refresh_payload:
                 now = datetime.utcnow()
-                token = self.config.tokenizer.create_token(old_payload)
-                token_sig = token.split(".")[2]
-                refresh = refresh_factory.create_token(
-                    {"token_sig": token_sig})
+                token = jwt_tokenizer.create_token(old_payload)
+                signature = {"token_sig": token.split(".")[2]}
+                refresh = jwt_refresh_tokenizer.create_token(
+                    signature)
                 resp.media = {
                     "token_type": self.config.get("jwt_header_prefix"),
                     "access_token": token,

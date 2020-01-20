@@ -1,22 +1,11 @@
 """Main App Entry Point."""
 
-from . import name, version, author
 from falcon import API
-from muria.init import config, logger, DEBUG
+from muria import config
 from muria.handler import extra_handlers
 from muria.middler import Middlewares
 from muria.route import base_path, static_route, resource_route
 
-
-print("---------------------------------")
-print("# API Name: %s" % config.get("api_name"))
-print("# API Version: v%s - Mode: %s" % (config.get("api_version"), config.get('api_mode')))
-print("# Engine: %s ver. %s - Copyright %s" % (name, version, author))
-print("---------------------------------")
-
-if DEBUG:
-    logger.debug("# WARNING: DEBUG MODE IS ACTIVE #")
-    logger.debug("---------------------------------")
 
 middlewares = Middlewares(config)
 

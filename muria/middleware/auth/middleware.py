@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from .token import BaseToken
-from muria.db.model import User
 
 
 class AuthMiddleware(object):

@@ -1,7 +1,7 @@
 """Authentication Test."""
 
 import pytest
-from muria.init import DEBUG
+from muria import DEBUG
 from falcon import (
     HTTP_OK
 )

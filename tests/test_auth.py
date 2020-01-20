@@ -3,7 +3,7 @@
 import time
 import pytest
 import base64
-from muria.init import config
+from muria import config
 from urllib import parse
 from muria.util.misc import generate_chars
 from falcon import (

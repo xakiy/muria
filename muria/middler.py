@@ -3,6 +3,7 @@
 from muria.middleware.require_https import RequireHTTPS
 from muria.middleware.auth import AuthMiddleware
 from muria.middleware.cors import CORS
+from muria.middleware.auth import JwtToken
 
 
 class Middlewares():
@@ -11,8 +12,20 @@ class Middlewares():
         self.common_middlewares = []
         self.security_middlewares = []
 
+        # jwt instance
+        jwt_token = JwtToken(
+            unloader=lambda payload: payload.get("data"),
+            secret_key=config.get("jwt_secret_key"),
+            algorithm=config.get("jwt_algorithm"),
+            token_header_prefix=config.get("jwt_header_prefix"),
+            leeway=config.getint("jwt_leeway"),
+            expiration_delta=config.getint("jwt_token_exp"),
+            audience=config.get("jwt_audience"),
+            issuer=config.get("jwt_issuer")
+        )
+
         auth_middleware = AuthMiddleware(
-            config.tokenizer,
+            jwt_token,
             exempt_routes=[
                 "/v1/ping",
                 "/v1/auth",
