@@ -1,8 +1,8 @@
 from muria import config
-from .manager import setup_database
+from .setup import initiate
 
 
-connection = setup_database(config)
+connection = initiate(config)
 User = connection.User
 BaseToken = connection.BaseToken
 

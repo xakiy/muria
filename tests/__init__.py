@@ -1,6 +1,6 @@
 import os
 
-# initialize default config if not set
+# initialize env testing configurations
 try:
     os.environ["MURIA_CONFIG"]
     os.environ["MURIA_MODE"]

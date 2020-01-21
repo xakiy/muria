@@ -12,7 +12,7 @@ from muria.db.model import define_entities
 tables = []  # no preload data
 
 
-def setup_database(config):
+def initiate(config):
     connection = Database()
     define_entities(connection)
     # connection is imported from model
@@ -72,16 +72,17 @@ def setup_database(config):
                 "dsn": config.get("db_dsn"),
             }
         )
-
+    # make the database scream
+    sql_debug(
+        config.getboolean("api_debug") and
+        config.getboolean("db_verbose"))
     try:
-        verbose = config.getboolean("api_debug") and \
-            config.getboolean("db_verbose")
-        sql_debug(verbose)
+        # establish connection
         connection.bind(**params)
-        print("main binding")
-        print(params)
+        print(params, config.getboolean("db_create_tables"))
+        # map tables to entities
         connection.generate_mapping(
-            create_tables=config.getboolean("db_create_table")
+            create_tables=config.getboolean("db_create_tables")
         )
 
         # populate preload data if not exist
@@ -95,5 +96,5 @@ def setup_database(config):
                 flush()
 
         return connection
-    except Exception as err:
+    except OperationalError as err:
         raise err
