@@ -2,6 +2,7 @@
 
 import os
 from configparser import SafeConfigParser, ExtendedInterpolation
+from urllib.parse import urlparse
 
 
 class _Configuration(SafeConfigParser):
@@ -26,9 +27,28 @@ class _Configuration(SafeConfigParser):
 
         self.set("DEFAULT", "app_dir", app_path)
         self.set("DEFAULT", "config_dir", os.path.dirname(config_file))
-        self.api_mode = env_mode
-        if self.api_mode not in self:
-            self.api_mode = "TEST"
+
+        if env_mode in self:
+            self.api_mode = env_mode
+        else:
+            self.api_mode = 'TEST'
+
+        if self.api_mode == 'DATABASE_URL':
+            try:
+                url = os.environ[self.api_mode]
+            except KeyError:
+                raise EnvironmentError("No DATABASE_URL defined!")
+            parsed = urlparse(url)
+            self.set(self.api_mode, "db_engine", parsed.scheme)
+            self.set(self.api_mode, "db_name", os.path.basename(parsed.path))
+            username, password = \
+                [i.split(':') for i in parsed.netloc.split('@')][0]
+            host, port = [i.split(':') for i in parsed.netloc.split('@')][1]
+            self.set(self.api_mode, "db_username", username)
+            self.set(self.api_mode, "db_password", password)
+            self.set(self.api_mode, "db_host", host)
+            self.set(self.api_mode, "db_port", port)
+
         self.set("DEFAULT", "api_mode", self.api_mode)
         return self[self.api_mode]
 

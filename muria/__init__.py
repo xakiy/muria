@@ -1,11 +1,9 @@
 """
     Muria
-    -----
-
     Falcon boilerplate for API development.
 
-    :copyright: (c) 2020 by Ahmad Ghulam Zakiy.
-    :license: MIT License, see LICENSE for more details.
+    Copyright: (c) 2020 by Ahmad Ghulam Zakiy.
+    License: MIT License, see LICENSE for more details.
 """
 from .version import name, version, author
 from muria.util import Configuration
