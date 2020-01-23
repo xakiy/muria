@@ -41,10 +41,10 @@ class _Configuration(SafeConfigParser):
             parsed = urlparse(url)
             self.set(self.api_mode, "db_engine", parsed.scheme)
             self.set(self.api_mode, "db_name", os.path.basename(parsed.path))
-            username, password = \
+            user, password = \
                 [i.split(':') for i in parsed.netloc.split('@')][0]
             host, port = [i.split(':') for i in parsed.netloc.split('@')][1]
-            self.set(self.api_mode, "db_username", username)
+            self.set(self.api_mode, "db_user", user)
             self.set(self.api_mode, "db_password", password)
             self.set(self.api_mode, "db_host", host)
             self.set(self.api_mode, "db_port", port)
