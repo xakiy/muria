@@ -19,6 +19,7 @@ def define_entities(db):
     class User(db.Entity, EntityMixin):
         # We store uuid in string column instead of binary
         # to simplify object instantiation and lookup
+        _table_ = "users"
         id = PrimaryKey(str, 36, default=lambda: str(uuid.uuid4()))
         nama = Required(str)
         jinshi = Optional(str, 1)
@@ -73,6 +74,7 @@ def define_entities(db):
 
 
     class BaseToken(db.Entity):
+        _discriminator_ = "base"
         id = PrimaryKey(int, size=64, auto=True)
         token_type = Discriminator(str)
         access_token = Required(str, 255, unique=True, index=True)
@@ -125,5 +127,5 @@ def define_entities(db):
             return resource_scopes.issubset(provided_sopes)
 
 
-    class BearerToken(BaseToken, EntityMixin):
+    class JwtToken(BaseToken, EntityMixin):
         _discriminator_ = "bearer"
