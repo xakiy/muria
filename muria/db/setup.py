@@ -1,6 +1,7 @@
 """Preparing database setups."""
 
 import sys
+from muria.util import logging
 from pony.orm import (
     Database,
     db_session,
@@ -15,7 +16,9 @@ tables = []  # no preload data
 def initiate(config):
     connection = Database()
     define_entities(connection)
-    # connection is imported from model
+    logger = logging(
+        name=config.get('api_log_name'),
+        level=config.getint('api_log_level'))
     params = dict()
     params.update({"provider": config.get("db_engine")})
 
@@ -73,13 +76,14 @@ def initiate(config):
             }
         )
     # make the database scream
-    sql_debug(
-        config.getboolean("api_debug") and
-        config.getboolean("db_verbose"))
+    if config.getboolean("api_debug"):
+        sql_debug(config.getboolean("db_verbose"))
+        logger.debug('# Database params: %s' % params)
+
     try:
         # establish connection
         connection.bind(**params)
-        print(params, config.getboolean("db_create_tables"))
+
         # map tables to entities
         connection.generate_mapping(
             create_tables=config.getboolean("db_create_tables")

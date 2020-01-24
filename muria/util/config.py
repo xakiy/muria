@@ -14,7 +14,7 @@ class _Configuration(SafeConfigParser):
     def __call__(self, env_ini, env_mode):
         config_file = None
         if os.path.isfile(env_ini):
-            config_file = env_ini
+            config_file = os.path.abspath(env_ini)
         else:
             raise EnvironmentError("Env %s belum diatur!" % env_ini)
 
@@ -25,8 +25,8 @@ class _Configuration(SafeConfigParser):
 
         app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        self.set("DEFAULT", "app_dir", app_path)
-        self.set("DEFAULT", "config_dir", os.path.dirname(config_file))
+        self.set("DEFAULT", "dir_app", app_path)
+        self.set("DEFAULT", "dir_config", os.path.dirname(config_file))
 
         if env_mode in self:
             self.api_mode = env_mode
