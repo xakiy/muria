@@ -26,20 +26,26 @@ def initiate(config):
     if params["provider"] in ("mysql", "postgres"):
         params.update(
             {
-                "host": config.get("db_host"),
-                "user": config.get("db_user")
+                "host": config.get("db_host", "localhost"),
+                "user": config.get("db_user", ""),
+                "password": config.get("db_password", "")
             }
         )
+        if config.get("db_connect_timeout"):
+            params.update(
+                {"connect_timeout": config.getint("db_connect_timeout", 10)}
+            )
         # mysql uses 'passwd' keyword argument instead of 'password'
         if params["provider"] == "mysql":
             params.update(
-                {"passwd": config.get("db_password"),
-                 "db": config.get("db_name")}
+                {
+                    "db": config.get("db_name"),
+                    "charset": config.get("db_encoding", "utf8mb4")
+                }
             )
         else:
             params.update(
-                {"password": config.get("db_password"),
-                 "dbname": config.get("db_name")}
+                {"dbname": config.get("db_name")}
             )
         # for postgres complete list arguments consult to
         # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS
@@ -48,36 +54,32 @@ def initiate(config):
                 params.update(
                     {"sslmode": config.get("db_sslmode")}
                 )
-            if config.get("db_connect_timeout"):
-                params.update(
-                    {"connect_timeout": config.get("db_connect_timeout")}
-                )
         # use socket if available prior to TCP connection
         if config.get("db_socket"):
             params.update(
                 {"unix_socket": config.get("db_socket")}
             )
-        else:
+        elif config.get("db_port"):
             params.update({"port": config.getint("db_port")})
     # SQLite
     elif params["provider"] == "sqlite":
         params.update({"filename": config.get("db_filename")})
         if params["filename"] != ":memory:":
             params.update(
-                {"create_db": config.getboolean("db_create_database")}
+                {"create_db": config.getboolean("db_create_database", True)}
             )
     # Oracle
     elif params["provider"] == "oracle":
         params.update(
             {
-                "user": config.get("db_user"),
-                "password": config.get("db_password"),
+                "user": config.get("db_user", ""),
+                "password": config.get("db_password", ""),
                 "dsn": config.get("db_dsn"),
             }
         )
     # make the database scream
     if config.getboolean("api_debug"):
-        sql_debug(config.getboolean("db_verbose"))
+        sql_debug(config.getboolean("db_verbose", False))
         logger.debug('# Database params: %s' % params)
 
     try:

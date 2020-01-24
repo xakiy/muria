@@ -72,7 +72,6 @@ def define_entities(db):
         def before_insert(self):
             self.salt, self.password = self.create_salted_password(self.password)
 
-
     class BaseToken(db.Entity):
         _discriminator_ = "base"
         id = PrimaryKey(int, size=64, auto=True)
@@ -84,8 +83,7 @@ def define_entities(db):
         expires_in = Optional(int, default=300)
         expires = Required(
             datetime,
-            default=lambda: datetime.now(timezone.utc) + timedelta(minutes=5),
-            sql_type='TIMESTAMP WITH TIME ZONE'
+            default=lambda: datetime.now(timezone.utc) + timedelta(minutes=5)
         )
         scope = Optional(str, default="")
         user = Required("User")
@@ -125,7 +123,6 @@ def define_entities(db):
             resource_scopes = set(scopes)
 
             return resource_scopes.issubset(provided_sopes)
-
 
     class JwtToken(BaseToken, EntityMixin):
         _discriminator_ = "bearer"
