@@ -72,9 +72,13 @@ class User(Credentials):
     suspended = fields.Boolean(default=False, dump_only=True)
 
 
-class BearerToken(Schema):
+class BaseToken(Schema):
     access_token = fields.String(required=True)
     refresh_token = fields.String(required=True)
     token_type = fields.String(required=True)
     issued_at = fields.String()
     expires_in = fields.Integer()
+
+
+class JwtToken(BaseToken):
+    user = User()

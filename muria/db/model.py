@@ -3,7 +3,7 @@ import uuid
 import hashlib
 import binascii
 from os import urandom
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta
 from .mixin import EntityMixin
 from pony.orm import (
     PrimaryKey,
@@ -11,6 +11,7 @@ from pony.orm import (
     Optional,
     Set,
     Discriminator,
+    LongStr
 )
 
 
@@ -76,14 +77,14 @@ def define_entities(db):
         _discriminator_ = "base"
         id = PrimaryKey(int, size=64, auto=True)
         token_type = Discriminator(str)
-        access_token = Required(str, 255, unique=True, index=True)
-        refresh_token = Optional(str, 255, index=True)
+        access_token = Required(LongStr, unique=True, index=True)
+        refresh_token = Optional(LongStr, index=True)
         revoked = Required(bool, default=False)
-        issued_at = Optional(int, default=lambda: int(time.time()))
+        issued_at = Optional(float, default=datetime.utcnow().timestamp)
         expires_in = Optional(int, default=300)
         expires = Required(
             datetime,
-            default=lambda: datetime.now(timezone.utc) + timedelta(minutes=5)
+            default=lambda: datetime.utcnow() + timedelta(minutes=5)
         )
         scope = Optional(str, default="")
         user = Required("User")
@@ -125,4 +126,4 @@ def define_entities(db):
             return resource_scopes.issubset(provided_sopes)
 
     class JwtToken(BaseToken, EntityMixin):
-        _discriminator_ = "bearer"
+        _discriminator_ = "jwt"

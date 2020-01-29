@@ -3,10 +3,11 @@
 from muria import config
 from muria.common.resource import Resource
 from pony.orm import db_session
-from muria.db import User
+from muria.db import User, JwtToken as JwtTokenEntity
 from muria.db.schema import Credentials
 from muria.middleware.auth import JwtToken
 from datetime import datetime
+from os import urandom
 import base64
 from falcon import (
     HTTP_OK,
@@ -46,7 +47,7 @@ class Authentication(Resource):
     Authenticate user with their credentials and issues token for them.
     """
 
-    def get_auth_header(self, auth_header, prefix):
+    def _get_auth_header(self, auth_header, prefix):
         parts = auth_header.split()
         if parts[0].lower() != prefix:
             raise HTTPUnauthorized(
@@ -109,7 +110,7 @@ class Authentication(Resource):
             password = req.media.get("password", "")
 
         elif req.get_header("AUTHORIZATION"):
-            username, password = self.get_auth_header(
+            username, password = self._get_auth_header(
                 req.get_header('AUTHORIZATION'), prefix='basic')
         else:
             raise HTTPBadRequest()
@@ -133,18 +134,20 @@ class Authentication(Resource):
             )
 
         # TODO: use rbac caching system for fast lookup of payload
-        now = datetime.utcnow()
-        data = {"id": user.get_user_id()}
+        now = datetime.utcnow().timestamp()
+        data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
         token = jwt_tokenizer.create_token(data)
         signature = {"token_sig": token.split(".")[2]}
         refresh_token = jwt_refresh_tokenizer.create_token(signature)
-        resp.media = {
-            "token_type": self.config.get("jwt_header_prefix"),
-            "access_token": token,
-            "expires_in": self.config.getint("jwt_token_exp"),
-            "issued_at": now,
-            "refresh_token": refresh_token
-        }
+        jwt = JwtTokenEntity(
+            token_type=self.config.get("jwt_header_prefix"),
+            access_token=token,
+            expires_in=self.config.getint("jwt_token_exp"),
+            issued_at=now,
+            refresh_token=refresh_token,
+            user=user
+        )
+        resp.media = jwt.unload()
         resp.status = HTTP_OK
 
 
@@ -263,7 +266,7 @@ class Refresh(Resource):
                 old_refresh_token)
 
             if old_payload and old_refresh_payload:
-                now = datetime.utcnow()
+                now = datetime.utcnow().timestamp()
                 token = jwt_tokenizer.create_token(old_payload)
                 signature = {"token_sig": token.split(".")[2]}
                 refresh = jwt_refresh_tokenizer.create_token(
