@@ -1,6 +1,7 @@
 import logging as _logging
-from .json import json
+from .json import json, json_dumper, json_loader
 from .config import Configuration
+from .cache import cache_factory
 
 
 def logging(name='Muria_Logging', level=20):
@@ -15,6 +16,9 @@ def logging(name='Muria_Logging', level=20):
 
 __all__ = [
     json,
+    json_dumper,
+    json_loader,
+    cache_factory,
     logging,
     Configuration
 ]
