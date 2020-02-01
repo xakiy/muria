@@ -30,13 +30,11 @@ DEBUG = config.getboolean("api_debug")
 logger = logging(name=config.get('api_log_name'),
                  level=config.getint('api_log_level'))
 
-print("---------------------------------")
+print("------------------------------------------------------------")
 print("# API Name: %s, v%s" % (API_NAME, API_MODE))
 print("# API Mode: %s" % config.get('api_mode'))
 print("# Engine: %s Ver. %s" % (name, version))
 print("# Copyright %s" % author)
-print("---------------------------------")
-
-if DEBUG:
-    logger.debug("# WARNING: DEBUG MODE IS ACTIVE #")
-    logger.debug("---------------------------------")
+print("------------------------------------------------------------")
+print("# DEBUG MODE IS: %s" % 'ON' if DEBUG else 'OFF')
+print("------------------------------------------------------------")
