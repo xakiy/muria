@@ -1,6 +1,5 @@
 """Authentication Test."""
-
-import time
+import os
 import pytest
 import base64
 from muria import config
@@ -16,7 +15,8 @@ from falcon import (
 
 @pytest.fixture(scope="class")
 def url(request):
-    request.cls.url = "/v1/auth"
+    request.cls.url = os.path.join("/", config.get("api_version"),
+                                   config.get("api_auth_path", "auth"))
 
 
 @pytest.mark.usefixtures("client", "url", "properties")
@@ -26,6 +26,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -39,6 +40,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -47,7 +49,7 @@ class TestAuth:
         # should get BAD REQUEST
         assert resp.status == HTTP_BAD_REQUEST
 
-    def test_post_shorted_password(self, client):
+    def test_post_shortened_password(self, client):
         # test with short password, less than 8 characters
         credentials = {
             "username": self.user.username,
@@ -56,6 +58,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -75,6 +78,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -93,6 +97,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -112,6 +117,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -143,6 +149,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             body=parse.urlencode(credentials),
             headers=headers,
             protocol=self.scheme,
@@ -165,6 +172,7 @@ class TestAuth:
         )
         resp = client.simulate_post(
             path=self.url,
+            query_string="acquire",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -176,7 +184,8 @@ class TestAuth:
 
         # no access_token payload
         resp = client.simulate_post(
-            path=self.url + "/verify",
+            path=self.url,
+            query_string="verify",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -188,7 +197,8 @@ class TestAuth:
         payload = {}
 
         resp = client.simulate_post(
-            path=self.url + "/verify",
+            path=self.url,
+            query_string="verify",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -201,13 +211,14 @@ class TestAuth:
         # Veriy token whether it is valid or not
 
         # get cached token from previous login
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
 
         payload = {"access_token": access_token}
         self.headers.update({"Authorization": "Badprefix " + access_token})
 
         resp = client.simulate_post(
-            path=self.url + "/verify",
+            path=self.url,
+            query_string="verify",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -220,13 +231,14 @@ class TestAuth:
         # Veriy token whether it is valid or not
 
         # get cached token from previous login
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
 
         prefix = config.get("jwt_header_prefix")
         self.headers.update({"Authorization": prefix + " " + access_token})
 
         resp = client.simulate_post(
-            path=self.url + "/verify",
+            path=self.url,
+            query_string="verify",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -238,7 +250,7 @@ class TestAuth:
     def test_post_varify_tampered_access_token(self, client, request):
 
         # get cached token from previous login
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
 
         # tamper the token
         broken_token = access_token[:-2]
@@ -247,7 +259,8 @@ class TestAuth:
         self.headers.update({"Authorization": prefix + " " + broken_token})
 
         resp = client.simulate_post(
-            path=self.url + "/verify",
+            path=self.url,
+            query_string="verify",
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -258,21 +271,22 @@ class TestAuth:
     def test_post_refresh_valid_token_pair(self, client, request):
 
         # do sleep to prevent token generation collision
-        time.sleep(1)
+        # time.sleep(1)
 
-        cached_access_token = request.config.cache.get("access_token", None)
-        cached_refresh_token = request.config.cache.get("refresh_token", None)
+        cached_access_token = request.config.cache.get("access_token", "")
+        cached_refresh_token = request.config.cache.get("refresh_token", "")
+
+        prefix = config.get("jwt_refresh_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_refresh_token})
 
         # renew that cached tokens
         payload = {
-            "access_token": cached_access_token,
-            "refresh_token": cached_refresh_token
+            "access_token": cached_access_token
         }
 
-        self.headers.pop("Authorization")
-
         resp = client.simulate_post(
-            path=self.url + "/refresh",
+            path=self.url,
+            query_string="refresh",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -288,17 +302,20 @@ class TestAuth:
 
     def test_post_refresh_tampered_access_token(self, client, request):
 
-        cached_access_token = request.config.cache.get("access_token", None)
-        cached_refresh_token = request.config.cache.get("refresh_token", None)
+        cached_access_token = request.config.cache.get("access_token", "")
+        cached_refresh_token = request.config.cache.get("refresh_token", "")
+
+        prefix = config.get("jwt_refresh_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_refresh_token})
 
         # tamper that cached access token
         payload = {
-            "access_token": cached_access_token[:2] + generate_chars(2),
-            "refresh_token": cached_refresh_token
+            "access_token": cached_access_token[:2] + generate_chars(2)
         }
 
         resp = client.simulate_post(
-            path=self.url + "/refresh",
+            path=self.url,
+            query_string="refresh",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -309,17 +326,22 @@ class TestAuth:
 
     def test_post_refresh_tampered_refresh_token(self, client, request):
 
-        cached_access_token = request.config.cache.get("access_token", None)
-        cached_refresh_token = request.config.cache.get("refresh_token", None)
+        cached_access_token = request.config.cache.get("access_token", "")
+        cached_refresh_token = request.config.cache.get("refresh_token", "")
+
+        tampered_refresh_token = cached_refresh_token[:2] + generate_chars(2)
+
+        prefix = config.get("jwt_refresh_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + tampered_refresh_token})
 
         # tamper that cached refresh token
         payload = {
-            "access_token": cached_access_token,
-            "refresh_token": cached_refresh_token[:2] + generate_chars(2)
+            "access_token": cached_access_token
         }
 
         resp = client.simulate_post(
-            path=self.url + "/refresh",
+            path=self.url,
+            query_string="refresh",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -328,16 +350,21 @@ class TestAuth:
         # should get UNAUTHORIZED
         assert resp.status == HTTP_UNAUTHORIZED
 
-    def test_post_refresh_with_no_tokens(self, client, request):
+    def test_post_refresh_with_no_token(self, client, request):
+
+        cached_refresh_token = request.config.cache.get("refresh_token", "")
+
+        prefix = config.get("jwt_refresh_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_refresh_token})
 
         # tamper that cached refresh token
         payload = {
-            "not_token": "foo",
-            "not_refresh_token": "bar"
+            "not_token": "foo"
         }
 
         resp = client.simulate_post(
-            path=self.url + "/refresh",
+            path=self.url,
+            query_string="refresh",
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -346,10 +373,16 @@ class TestAuth:
         # should get BAD_REQUEST
         assert resp.status == HTTP_BAD_REQUEST
 
-    def test_post_refresh_with_payload(self, client, request):
+    def test_post_refresh_without_payload(self, client, request):
+
+        cached_refresh_token = request.config.cache.get("refresh_token", "")
+
+        prefix = config.get("jwt_refresh_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_refresh_token})
 
         resp = client.simulate_post(
-            path=self.url + "/refresh",
+            path=self.url,
+            query_string="refresh",
             headers=self.headers,
             protocol=self.scheme,
         )

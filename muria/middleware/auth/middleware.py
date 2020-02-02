@@ -1,6 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from .token import BaseToken
+from .token import Tacen, Jwt
+from muria.db import User, JwtToken
+from muria.db.schema import Credentials
+from datetime import datetime
+from os import urandom
+from pony.orm import (
+    db_session
+)
+from falcon import (
+    HTTP_OK,
+    HTTPBadRequest,
+    HTTPUnprocessableEntity,
+    HTTPUnauthorized,
+    HTTP_RESET_CONTENT
+)
 
 
 class AuthMiddleware(object):
@@ -28,35 +42,44 @@ class AuthMiddleware(object):
 
     """
 
-    def __init__(self, token, exempt_routes=None, exempt_methods=None):
-        self.token = token
-        if not isinstance(token, BaseToken):
-            raise ValueError(
-                'Invalid authentication token {0}. Must inherit '
-                '`muria.middleware.auth.token.BaseToken`'.format(token)
-            )
-        self.exempt_routes = exempt_routes or []
-        self.exempt_methods = exempt_methods or ['OPTIONS']
+    def __init__(self, auth):
+        self.auth = auth
 
     def _get_auth_settings(self, req, resource):
-        auth_settings = getattr(resource, 'auth', {})
-        auth_settings['exempt_routes'] = self.exempt_routes
-        if auth_settings.get('auth_disabled'):
-            auth_settings['exempt_routes'].append(req.uri_template)
+        settings = getattr(resource, 'auth', {})
+        settings['exempt_routes'] = self.auth.exempt_routes
+        settings['exempt_methods'] = settings.get('exempt_methods') or \
+            self.auth.exempt_methods
+        if settings.get('auth_disabled'):
+            settings['exempt_routes'].append(req.uri_template)
+        return settings
 
-        for key in ('exempt_methods', 'token'):
-            auth_settings[key] = auth_settings.get(key) or getattr(self, key)
+    def process_request(self, req, resp):
+        # auth path with truthy parameter
+        if req.path == self.auth.path:
+            if req.get_param_as_bool('acquire'):
+                self.auth.acquire(req, resp)
+            elif req.get_param_as_bool('verify'):
+                self.auth.verify(req, resp)
+            elif req.get_param_as_bool('refresh'):
+                self.auth.refresh(req, resp)
+            elif req.get_param_as_bool('revoke'):
+                self.auth.revoke(req, resp)
 
-        return auth_settings
-
-    def process_resource(self, req, resp, resource, *args, **kwargs):
+    def process_resource(self, req, resp, resource, params):
         auth_setting = self._get_auth_settings(req, resource)
         if (req.uri_template in auth_setting['exempt_routes'] or
                 req.method in auth_setting['exempt_methods']):
             return
-        token = auth_setting['token']
+
+        token = self.auth.tokenizer.parse_token_header(req)
+        # TODO:
+        # cache revocation list should check for revoked token
+        # if token in cache.getRevocationList:
+        #   return
         # TODO:
         # user_id verification is probably needed here
-        payload = token.unload(token.parse_token_header(req))
+        # or some decryption using fernet
+        payload = self.auth.tokenizer.unload(token)
         if payload.get("id"):
             req.context.user = payload

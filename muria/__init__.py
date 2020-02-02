@@ -11,8 +11,8 @@ from muria.util import logging
 import os
 
 
-# MURIA_CONFIG merujuk ke berkas konfigurasi
-# seperti: export MURIA_CONFIG=~/config/devel.ini
+# exported MURIA_CONFIG points to some_config.ini file, e.g.:
+# export MURIA_CONFIG=/path/to/configuration.ini
 ini_file = str(os.environ.get("MURIA_CONFIG"))
 ini_section = str(os.environ.get("MURIA_MODE"))
 
@@ -24,17 +24,17 @@ __license__ = 'MIT License'
 config = Configuration(env_ini=ini_file, env_mode=ini_section)
 
 API_NAME = config.get("api_name")
-API_MODE = config.get("api_version")
+API_VERSION = config.get("api_version")
 DEBUG = config.getboolean("api_debug")
 
 logger = logging(name=config.get('api_log_name'),
                  level=config.getint('api_log_level'))
 
 print("------------------------------------------------------------")
-print("# API Name: %s, v%s" % (API_NAME, API_MODE))
+print("# API Name: %s, %s" % (API_NAME, API_VERSION))
 print("# API Mode: %s" % config.get('api_mode'))
-print("# Engine: %s Ver. %s" % (name, version))
-print("# Copyright %s" % author)
+print("# Engine: %s Ver. %s" % (__app__, __version__))
+print("# Copyright %s" % __author__)
 print("------------------------------------------------------------")
 print("# DEBUG MODE IS: %s" % 'ON' if DEBUG else 'OFF')
 print("------------------------------------------------------------")

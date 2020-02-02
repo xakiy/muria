@@ -1,9 +1,9 @@
 """Middlewares setup."""
 
 from muria.middleware.require_https import RequireHTTPS
-from muria.middleware.auth import AuthMiddleware
+from muria.middleware.auth import Auth
 from muria.middleware.cors import CORS
-from muria.middleware.auth import JwtToken
+from muria.util import cache_factory
 
 
 class Middlewares():
@@ -12,24 +12,20 @@ class Middlewares():
         self.common_middlewares = []
         self.security_middlewares = []
 
-        # jwt instance
-        jwt_token = JwtToken(
-            unloader=lambda payload: payload.get("data"),
+        auth = Auth(
+            route_basepath=config.get("api_version"),
+            route_path=config.get("api_auth_path", "auth"),
             secret_key=config.get("jwt_secret_key"),
             algorithm=config.get("jwt_algorithm"),
-            token_header_prefix=config.get("jwt_header_prefix"),
+            jwt_header_prefix=config.get("jwt_header_prefix"),
+            jwt_refresh_header_prefix=config.get("jwt_refresh_header_prefix"),
             leeway=config.getint("jwt_leeway"),
-            expiration_delta=config.getint("jwt_token_exp"),
+            jwt_token_exp=config.getint("jwt_token_exp"),
+            jwt_refresh_exp=config.getint("jwt_refresh_exp"),
             audience=config.get("jwt_audience"),
-            issuer=config.get("jwt_issuer")
-        )
-
-        auth_middleware = AuthMiddleware(
-            jwt_token,
+            issuer=config.get("jwt_issuer"),
             exempt_routes=[
-                "/v1/ping",
-                "/v1/auth",
-                "/v1/auth/refresh"
+                "/v1/ping"
             ],
             exempt_methods=[
                 "HEAD",
@@ -59,7 +55,7 @@ class Middlewares():
         )
 
         self.security_middlewares.append(RequireHTTPS())
-        self.security_middlewares.append(auth_middleware)
+        self.security_middlewares.append(auth.middleware)
         self.security_middlewares.append(cors.middleware)
 
         self.middleware_list = self.common_middlewares + \

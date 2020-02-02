@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 from falcon import HTTPUnauthorized
 
 
-class BaseToken(object):
+class Tacen(object):
     """Base Token."""
 
     TOKEN_TYPE = None
 
-    def __init__(self, unloader, token_header_prefix=None):
+    def __init__(self, token_header_prefix=None):
         """Configuration initialization."""
         raise NotImplementedError()
 
@@ -48,17 +48,16 @@ class BaseToken(object):
         raise NotImplementedError()
 
 
-class JwtToken(BaseToken):
+class Jwt(Tacen):
 
     TOKEN_TYPE = "jwt"
 
-    def __init__(self, unloader, secret_key,
+    def __init__(self, secret_key,
                  algorithm, token_header_prefix,
                  leeway=0, expiration_delta=30 * 60,
                  issuer=None, audience=None, access_token=None,
                  verify_claims=None, required_claims=None):
 
-        self.unloader = unloader
         self.secret_key = secret_key
         self.algorithm = algorithm or 'HS256'
         self.token_header_prefix = token_header_prefix or self.TOKEN_TYPE
@@ -160,7 +159,7 @@ class JwtToken(BaseToken):
     def unload(self, token, options={}):
         """Unload jwt token value."""
         decoded = self.verify_token(token, options)
-        token_value = self.unloader(decoded)
+        token_value = decoded.get("data", None)
         if not token_value:
             raise HTTPUnauthorized(
                 description='Invalid JWT Credentials',

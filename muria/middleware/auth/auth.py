@@ -1,0 +1,222 @@
+"""Authentication Resource."""
+
+from .token import Jwt
+from .middleware import AuthMiddleware
+from pony.orm import db_session
+from muria.db import User, JwtToken
+from muria.db.schema import Credentials
+from datetime import datetime
+from os import environ, urandom, path
+import base64
+from falcon import (
+    HTTP_OK,
+    HTTPBadRequest,
+    HTTPUnprocessableEntity,
+    HTTPUnauthorized,
+    HTTP_RESET_CONTENT
+)
+
+
+def default_secret_key(size=32):
+    try:
+        key = environ["AUTH_TOKEN_KEY"]
+    except KeyError:
+        key = environ["AUTH_TOKEN_KEY"] = urandom(int(size)).hex()
+    finally:
+        return key
+
+
+class Auth(object):
+
+    def __init__(self, **auth_config):
+        default_auth_config = {
+            "route_basepath": "v1",
+            "route_path": "auth",
+            "secret_key": default_secret_key(32),
+            "algorithm": "HS256",
+            "jwt_header_prefix": "jwt",
+            "jwt_refresh_header_prefix": "ref",
+            "jwt_token_exp": 1800,
+            "jwt_refresh_exp": 604800,
+            "leeway": 0,
+            "audience": "https://localhost",
+            "issuer": "https://localhost",
+            "exempt_routes": [],
+            "exempt_methods": ['OPTIONS']
+        }
+        for auth_setting, setting_value in default_auth_config.items():
+            auth_config.setdefault(auth_setting, setting_value)
+
+        unknown_settings = list(
+            set(auth_config.keys()) - set(default_auth_config.keys())
+        )
+        if unknown_settings:
+            raise ValueError(
+                "Unknown Auth settings: {0}".format(unknown_settings)
+            )
+
+        if not auth_config["route_path"]:
+            auth_config["route_path"] = "auth"
+
+        self.path = path.join("/", auth_config["route_basepath"],
+                              auth_config["route_path"])
+
+        self.exempt_routes = auth_config["exempt_routes"] or []
+        self.exempt_methods = auth_config["exempt_methods"] or ['OPTIONS']
+
+        self._auth_config = auth_config
+
+        self.tokenizer = Jwt(
+            secret_key=auth_config.get("secret_key"),
+            algorithm=auth_config.get("algorithm"),
+            token_header_prefix=auth_config.get("jwt_header_prefix"),
+            leeway=auth_config.get("leeway"),
+            expiration_delta=auth_config.get("jwt_token_exp"),
+            audience=auth_config.get("audience"),
+            issuer=auth_config.get("issuer")
+        )
+
+        self.refresher = Jwt(
+            secret_key=auth_config.get("secret_key"),
+            algorithm=auth_config.get("algorithm"),
+            token_header_prefix=auth_config.get("jwt_refresh_header_prefix"),
+            leeway=auth_config.get("leeway"),
+            expiration_delta=auth_config.get("jwt_refresh_exp"),
+            audience=auth_config.get("audience"),
+            issuer=auth_config.get("issuer")
+        )
+
+    def _get_auth_header(self, auth_header, prefix):
+        parts = auth_header.split()
+        if parts[0].lower() != prefix:
+            raise HTTPUnauthorized(
+                description='Invalid Authentication Header: '
+                'Must start with `basic`')
+        elif len(parts) == 1:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: Token Missing')
+        elif len(parts) > 2:
+            raise HTTPUnauthorized(
+                description='Invalid Authorization Header: '
+                'Contains extra content')
+        decoded = base64.urlsafe_b64decode(parts[1]).decode('utf8')
+        # return tuple of username and password
+        return decoded.split(':')
+
+    @property
+    def middleware(self):
+        return AuthMiddleware(self)
+
+    @db_session
+    def acquire(self, req, resp):
+        """Authenticate user.
+
+           Authenticate user data either in json, form_urlencoded or
+           auth basic header."""
+
+        if req.media:
+            username = req.media.get("username", "")
+            password = req.media.get("password", "")
+        # auth basic header
+        elif req.get_header("AUTHORIZATION"):
+            username, password = self._get_auth_header(
+                req.get_header('AUTHORIZATION'), prefix='basic')
+        else:
+            raise HTTPBadRequest()
+
+        errors = Credentials().validate(
+            {"username": username, "password": password}
+        )
+        if errors:
+            raise HTTPUnprocessableEntity(
+                code=88810,  # unprocessable creds either blank or invalid
+                title="Authentication Failure",
+                description=str(errors)
+            )
+
+        user = User.authenticate(username=username, password=password)
+        if not user:
+            raise HTTPUnauthorized(
+                code=88811,  # credentials received but invalid
+                title="Authentication Failure",
+                description="Invalid credentials"
+            )
+
+        # TODO: use rbac caching system for fast lookup of payload
+        now = datetime.utcnow().timestamp()
+        data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
+        token = self.tokenizer.create_token(data)
+        signature = {"signature": token.split(".")[2]}
+        refresh_token = self.refresher.create_token(signature)
+        jwt = JwtToken(
+            token_type=self._auth_config.get("jwt_header_prefix"),
+            access_token=token,
+            expires_in=self._auth_config.get("jwt_token_exp"),
+            issued_at=now,
+            refresh_token=refresh_token,
+            user=user
+        )
+        resp.media = jwt.unload()
+        resp.status = HTTP_OK
+        resp.complete = True
+
+    def verify(self, req, resp):
+
+        token = self.tokenizer.parse_token_header(req)
+        payload = self.tokenizer.unload(token)
+        if payload.get("id"):
+            resp.media = {"access_token": token}
+            resp.status = HTTP_OK
+            resp.complete = True
+        else:
+            raise HTTPBadRequest()
+
+    def refresh(self, req, resp):
+
+        # TODO:
+        # 1. use caching system for invalidate previous jwt token
+        # 2. implement rate limiting to prevent DDoS
+        old_refresh_token = self.refresher.parse_token_header(req)
+        old_refresh_payload = self.refresher.unload(old_refresh_token)
+
+        if req.media and req.media.get("access_token") and old_refresh_payload:
+
+            old_token = req.media.get("access_token")
+            old_token_payload = self.tokenizer.unload(
+                old_token, options={'verify_exp': False})
+
+            try:
+                if old_refresh_payload["signature"] == old_token.split(".")[2]:
+                    now = datetime.utcnow().timestamp()
+                    old_token_payload.update({"rand": urandom(3).hex()})
+                    token = self.tokenizer.create_token(old_token_payload)
+                    signature = {"signature": token.split(".")[2]}
+                    refresh = self.refresher.create_token(signature)
+                    resp.media = {
+                        "token_type":
+                            self._auth_config.get("jwt_header_prefix"),
+                        "access_token": token,
+                        "expires_in": self._auth_config.get("jwt_token_exp"),
+                        "issued_at": now,
+                        "refresh_token": refresh
+                    }
+                    resp.status = HTTP_OK
+                    resp.complete = True
+            except Exception:
+                raise HTTPBadRequest()
+        else:
+            raise HTTPBadRequest()
+
+    def revoke(self, req, resp):
+
+        token = self.tokenizer.parse_token_header(req)
+        if token:
+            jwt = JwtToken.get(access_token=token)
+            if jwt and jwt.revoked is False:
+                jwt.revoked = True
+                # TODO:
+                # update cache revocation list
+            resp.status = HTTP_RESET_CONTENT
+            resp.complete = True
+        else:
+            raise HTTPBadRequest()

@@ -4,10 +4,12 @@ from falcon import API
 from muria import config
 from muria.handler import extra_handlers
 from muria.middler import Middlewares
-from muria.route import base_path, static_route, resource_route
+from muria.route import static_route, resource_route
 
 
 middlewares = Middlewares(config)
+
+base_path = "/" + config.get("api_version")
 
 app = application = API(middleware=middlewares())
 
