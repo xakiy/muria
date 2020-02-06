@@ -9,7 +9,8 @@ from falcon import (
     HTTP_BAD_REQUEST,
     HTTP_UNPROCESSABLE_ENTITY,
     HTTP_UNAUTHORIZED,
-    HTTP_OK
+    HTTP_OK,
+    HTTP_RESET_CONTENT
 )
 
 
@@ -26,7 +27,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -40,7 +41,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -58,7 +59,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -78,7 +79,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -97,7 +98,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -107,7 +108,29 @@ class TestAuth:
         assert resp.status == HTTP_UNAUTHORIZED
         assert resp.json.get("code") == 88811
 
-    def test_post_valid_credentials(self, client, request):
+    def test_post_valid_credentials_as_basic_auth(self, client, request):
+        # post credential as Basic Auth
+
+        # login with valid credentials
+        credentials = ":".join([self.user.username, self.password_string])
+
+        auth_string = "Basic %s" % \
+            base64.encodebytes(bytes(credentials, "utf8"))[:-1].decode("utf8")
+
+        self.headers.update(
+            {"Authorization": auth_string}
+        )
+        resp = client.simulate_post(
+            path=self.url,
+            params={"mode": "acquire"},
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get OK
+        assert resp.status == HTTP_OK
+
+    def test_post_valid_credentials_as_json(self, client, request):
 
         # login with valid credentials
         credentials = {
@@ -117,7 +140,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             json=credentials,
             headers=self.headers,
             protocol=self.scheme,
@@ -149,7 +172,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="acquire",
+            params={"mode": "acquire"},
             body=parse.urlencode(credentials),
             headers=headers,
             protocol=self.scheme,
@@ -158,34 +181,19 @@ class TestAuth:
         # should get OK
         assert resp.status == HTTP_OK
 
-    def test_post_valid_credentials_as_basic_auth(self, client, request):
-        # post credential as Basic Auth
+        access_token = resp.json.get("access_token")
+        refresh_token = resp.json.get("refresh_token")
 
-        # login with valid credentials
-        credentials = ":".join([self.user.username, self.password_string])
-
-        auth_string = "Basic %s" % \
-            base64.encodebytes(bytes(credentials, "utf8"))[:-1].decode("utf8")
-
-        self.headers.update(
-            {"Authorization": auth_string}
-        )
-        resp = client.simulate_post(
-            path=self.url,
-            query_string="acquire",
-            headers=self.headers,
-            protocol=self.scheme,
-        )
-
-        # should get OK
-        assert resp.status == HTTP_OK
+        # cache for revocation tests
+        request.config.cache.set("other_access_token", access_token)
+        request.config.cache.set("other_refresh_token", refresh_token)
 
     def test_post_verify_without_access_token(self, client, request):
 
         # no access_token payload
         resp = client.simulate_post(
             path=self.url,
-            query_string="verify",
+            params={"mode": "verify"},
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -198,7 +206,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="verify",
+            params={"mode": "verify"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -218,7 +226,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="verify",
+            params={"mode": "verify"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -238,7 +246,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="verify",
+            params={"mode": "verify"},
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -260,7 +268,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="verify",
+            params={"mode": "verify"},
             headers=self.headers,
             protocol=self.scheme,
         )
@@ -286,7 +294,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="refresh",
+            params={"mode": "refresh"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -300,6 +308,10 @@ class TestAuth:
         assert new_access_token != cached_access_token
         assert new_refresh_token != cached_refresh_token
 
+        # cache newly updated tokens
+        request.config.cache.set("access_token", new_access_token)
+        request.config.cache.set("refresh_token", new_refresh_token)
+
     def test_post_refresh_tampered_access_token(self, client, request):
 
         cached_access_token = request.config.cache.get("access_token", "")
@@ -310,12 +322,12 @@ class TestAuth:
 
         # tamper that cached access token
         payload = {
-            "access_token": cached_access_token[:2] + generate_chars(2)
+            "access_token": cached_access_token[:-2] + generate_chars(2)
         }
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="refresh",
+            params={"mode": "refresh"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -329,7 +341,7 @@ class TestAuth:
         cached_access_token = request.config.cache.get("access_token", "")
         cached_refresh_token = request.config.cache.get("refresh_token", "")
 
-        tampered_refresh_token = cached_refresh_token[:2] + generate_chars(2)
+        tampered_refresh_token = cached_refresh_token[:-2] + generate_chars(2)
 
         prefix = config.get("jwt_refresh_header_prefix")
         self.headers.update({"Authorization": prefix + " " + tampered_refresh_token})
@@ -341,7 +353,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="refresh",
+            params={"mode": "refresh"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -364,7 +376,7 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="refresh",
+            params={"mode": "refresh"},
             json=payload,
             headers=self.headers,
             protocol=self.scheme,
@@ -382,10 +394,73 @@ class TestAuth:
 
         resp = client.simulate_post(
             path=self.url,
-            query_string="refresh",
+            params={"mode": "refresh"},
             headers=self.headers,
             protocol=self.scheme,
         )
 
         # should get BAD REQUEST
         assert resp.status == HTTP_BAD_REQUEST
+
+    def test_post_revoke_invalid_token(self, client, request):
+
+        cached_token = request.config.cache.get("other_access_token", "")
+
+        tampered_token = cached_token[:-2] + generate_chars(2)
+
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + tampered_token})
+
+        resp = client.simulate_post(
+            path=self.url,
+            params={"mode": "revoke"},
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get BAD REQUEST
+        assert resp.status == HTTP_UNAUTHORIZED
+
+    def test_post_revoke_valid_token(self, client, request):
+
+        cached_token = request.config.cache.get("other_access_token", "")
+
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_token})
+
+        resp = client.simulate_post(
+            path=self.url,
+            params={"mode": "revoke"},
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get RESET CONTENT
+        assert resp.status == HTTP_RESET_CONTENT
+
+    def test_post_revoke_verify_revoked_token(self, client, request):
+
+        cached_token = request.config.cache.get("other_access_token", "")
+
+        prefix = config.get("jwt_header_prefix")
+        self.headers.update({"Authorization": prefix + " " + cached_token})
+
+        resp = client.simulate_post(
+            path=self.url,
+            params={"mode": "verify"},
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED
+
+        url = os.path.join("/", config.get("api_version"), "stats/user")
+        resp = client.simulate_post(
+            path=url,
+            headers=self.headers,
+            protocol=self.scheme,
+        )
+
+        # should get UNAUTHORIZED
+        assert resp.status == HTTP_UNAUTHORIZED

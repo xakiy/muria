@@ -9,8 +9,7 @@ from muria.util import cache_factory
 class Middlewares():
 
     def __init__(self, config, **kwargs):
-        self.common_middlewares = []
-        self.security_middlewares = []
+        self.middlewares = []
 
         auth = Auth(
             route_basepath=config.get("api_version"),
@@ -30,10 +29,15 @@ class Middlewares():
             exempt_methods=[
                 "HEAD",
                 "OPTIONS"
-            ]
+            ],
+            cache=cache_factory(provider=config.get("cache_provider"),
+                                host=config.get("cache_host"),
+                                port=config.get("cache_port"),
+                                prefix="auth_middleware"),
         )
 
-        cors_debug = config.getint("cors_log_level") if config.getboolean("api_debug") else 30
+        cors_debug = config.getint("cors_log_level") \
+            if config.getboolean("api_debug") else 30
         cors = CORS(
             log_level=cors_debug,
             # false means disallow any random host to connect
@@ -53,13 +57,10 @@ class Middlewares():
             ),
             max_age=config.getint("cors_max_age"),
         )
-
-        self.security_middlewares.append(RequireHTTPS())
-        self.security_middlewares.append(auth.middleware)
-        self.security_middlewares.append(cors.middleware)
-
-        self.middleware_list = self.common_middlewares + \
-            self.security_middlewares
+        # Order is matter here
+        self.middlewares.append(RequireHTTPS())
+        self.middlewares.append(cors.middleware)
+        self.middlewares.append(auth.middleware)
 
     def __call__(self):
-        return self.middleware_list
+        return self.middlewares

@@ -42,7 +42,8 @@ class Auth(object):
             "audience": "https://localhost",
             "issuer": "https://localhost",
             "exempt_routes": [],
-            "exempt_methods": ['OPTIONS']
+            "exempt_methods": ['OPTIONS'],
+            "cache": None
         }
         for auth_setting, setting_value in default_auth_config.items():
             auth_config.setdefault(auth_setting, setting_value)
@@ -63,6 +64,8 @@ class Auth(object):
 
         self.exempt_routes = auth_config["exempt_routes"] or []
         self.exempt_methods = auth_config["exempt_methods"] or ['OPTIONS']
+
+        self.cache = auth_config["cache"] or None
 
         self._auth_config = auth_config
 
@@ -109,10 +112,8 @@ class Auth(object):
 
     @db_session
     def acquire(self, req, resp):
-        """Authenticate user.
-
-           Authenticate user data either in json, form_urlencoded or
-           auth basic header."""
+        # authenticate user credentials via json, form_urlencoded or
+        # auth basic header digest
 
         if req.media:
             username = req.media.get("username", "")
@@ -141,8 +142,7 @@ class Auth(object):
                 title="Authentication Failure",
                 description="Invalid credentials"
             )
-
-        # TODO: use rbac caching system for fast lookup of payload
+        # generate token along with its refresh token
         now = datetime.utcnow().timestamp()
         data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
         token = self.tokenizer.create_token(data)
@@ -151,30 +151,35 @@ class Auth(object):
         jwt = JwtToken(
             token_type=self._auth_config.get("jwt_header_prefix"),
             access_token=token,
-            expires_in=self._auth_config.get("jwt_token_exp"),
+            expires_in=int(self._auth_config.get("jwt_token_exp")),
+            refresh_expires_in=int(self._auth_config.get("jwt_refresh_exp")),
             issued_at=now,
             refresh_token=refresh_token,
             user=user
         )
         resp.media = jwt.unload()
         resp.status = HTTP_OK
-        resp.complete = True
 
     def verify(self, req, resp):
+        # unauthorized token if already revoked
+        # otherwise send it back if valid
 
         token = self.tokenizer.parse_token_header(req)
+        if self.is_token_revoked(token):
+            raise HTTPUnauthorized()
+
         payload = self.tokenizer.unload(token)
         if payload.get("id"):
             resp.media = {"access_token": token}
             resp.status = HTTP_OK
-            resp.complete = True
         else:
             raise HTTPBadRequest()
 
+    @db_session
     def refresh(self, req, resp):
 
         # TODO:
-        # 1. use caching system for invalidate previous jwt token
+        # 1. refresh revoke checking
         # 2. implement rate limiting to prevent DDoS
         old_refresh_token = self.refresher.parse_token_header(req)
         old_refresh_payload = self.refresher.unload(old_refresh_token)
@@ -182,6 +187,12 @@ class Auth(object):
         if req.media and req.media.get("access_token") and old_refresh_payload:
 
             old_token = req.media.get("access_token")
+            # jwt revoke checking
+            if self.is_token_revoked(old_token):
+                # unauthorized token pair for hard revoke
+                # otherwise allow them to refresh
+                # if you want to implement soft revoke
+                raise HTTPUnauthorized()
             old_token_payload = self.tokenizer.unload(
                 old_token, options={'verify_exp': False})
 
@@ -189,34 +200,66 @@ class Auth(object):
                 if old_refresh_payload["signature"] == old_token.split(".")[2]:
                     now = datetime.utcnow().timestamp()
                     old_token_payload.update({"rand": urandom(3).hex()})
+                    user = User.get(id=old_token_payload["id"])
                     token = self.tokenizer.create_token(old_token_payload)
                     signature = {"signature": token.split(".")[2]}
-                    refresh = self.refresher.create_token(signature)
-                    resp.media = {
-                        "token_type":
-                            self._auth_config.get("jwt_header_prefix"),
-                        "access_token": token,
-                        "expires_in": self._auth_config.get("jwt_token_exp"),
-                        "issued_at": now,
-                        "refresh_token": refresh
-                    }
+                    refresh_token = self.refresher.create_token(signature)
+                    jwt = JwtToken(
+                        token_type=self._auth_config.get("jwt_header_prefix"),
+                        access_token=token,
+                        expires_in=self._auth_config.get("jwt_token_exp"),
+                        refresh_expires_in=self._auth_config.get("jwt_refresh_exp"),
+                        issued_at=now,
+                        refresh_token=refresh_token,
+                        user=user
+                    )
+                    self._revoke_token(old_token)
+                    resp.media = jwt.unload()
                     resp.status = HTTP_OK
-                    resp.complete = True
             except Exception:
                 raise HTTPBadRequest()
         else:
             raise HTTPBadRequest()
 
     def revoke(self, req, resp):
-
+        # TODO:
+        # 1. revoke only token for soft revoke
+        # 2. revoke both for hard revoke
         token = self.tokenizer.parse_token_header(req)
-        if token:
-            jwt = JwtToken.get(access_token=token)
-            if jwt and jwt.revoked is False:
-                jwt.revoked = True
-                # TODO:
-                # update cache revocation list
+        if self.is_token_revoked(token):
+            raise HTTPUnauthorized()
+
+        payload = self.tokenizer.unload(token)
+        if payload.get("id") and self._revoke_token(token):
             resp.status = HTTP_RESET_CONTENT
-            resp.complete = True
         else:
             raise HTTPBadRequest()
+
+    @db_session
+    def _revoke_token(self, token):
+        jwt = JwtToken.get(access_token=token)
+        if jwt:
+            if jwt.revoked is False:
+                jwt.revoked = True
+            expiry = jwt.get_expires_at()
+            self._cache_revoked_token(token, expiry)
+            return True
+        else:
+            return False
+
+    def _cache_revoked_token(self, token, expiry=1800):
+        if not self.cache:
+            return
+        try:
+            self.cache.set(token[-32:], token, expiry)
+        except Exception:
+            return
+
+    @db_session
+    def is_token_revoked(self, token):
+        if self.cache:
+            try:
+                return self.cache.get(token[-32:]) == token
+            except Exception:
+                pass
+        return JwtToken.exists(access_token=token, revoked=True)

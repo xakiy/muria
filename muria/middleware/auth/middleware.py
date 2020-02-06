@@ -1,20 +1,6 @@
-# -*- coding: utf-8 -*-
+"""Auth Middleware."""
 
-from .token import Tacen, Jwt
-from muria.db import User, JwtToken
-from muria.db.schema import Credentials
-from datetime import datetime
-from os import urandom
-from pony.orm import (
-    db_session
-)
-from falcon import (
-    HTTP_OK,
-    HTTPBadRequest,
-    HTTPUnprocessableEntity,
-    HTTPUnauthorized,
-    HTTP_RESET_CONTENT
-)
+from falcon import HTTPUnauthorized
 
 
 class AuthMiddleware(object):
@@ -54,29 +40,20 @@ class AuthMiddleware(object):
             settings['exempt_routes'].append(req.uri_template)
         return settings
 
-    def process_request(self, req, resp):
-        # auth path with truthy parameter
-        if req.path == self.auth.path:
-            if req.get_param_as_bool('acquire'):
-                self.auth.acquire(req, resp)
-            elif req.get_param_as_bool('verify'):
-                self.auth.verify(req, resp)
-            elif req.get_param_as_bool('refresh'):
-                self.auth.refresh(req, resp)
-            elif req.get_param_as_bool('revoke'):
-                self.auth.revoke(req, resp)
-
     def process_resource(self, req, resp, resource, params):
+        # bypass token check and route to the auth responder for processing
+        if req.path == self.auth.path:
+            req.context.auth = self.auth
+            return
+
         auth_setting = self._get_auth_settings(req, resource)
         if (req.uri_template in auth_setting['exempt_routes'] or
                 req.method in auth_setting['exempt_methods']):
             return
 
         token = self.auth.tokenizer.parse_token_header(req)
-        # TODO:
-        # cache revocation list should check for revoked token
-        # if token in cache.getRevocationList:
-        #   return
+        if self.auth.is_token_revoked(token):
+            raise HTTPUnauthorized()
         # TODO:
         # user_id verification is probably needed here
         # or some decryption using fernet

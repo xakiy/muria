@@ -82,10 +82,7 @@ def define_entities(db):
         revoked = Required(bool, default=False)
         issued_at = Optional(float, default=datetime.utcnow().timestamp)
         expires_in = Optional(int, default=300)
-        expires = Required(
-            datetime,
-            default=lambda: datetime.utcnow() + timedelta(minutes=5)
-        )
+        refresh_expires_in = Optional(int, default=300 * 15)
         scope = Optional(str, default="")
         user = Required("User")
 

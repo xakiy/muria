@@ -78,6 +78,7 @@ class BaseToken(Schema):
     token_type = fields.String(required=True)
     issued_at = fields.String()
     expires_in = fields.Integer()
+    refresh_expires_in = fields.Integer(load_only=True)
 
 
 class JwtToken(BaseToken):

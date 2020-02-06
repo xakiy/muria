@@ -41,10 +41,9 @@ def another_user(request):
 @pytest.mark.usefixtures("client", "url", "properties", "another_user")
 class TestUsers():
 
-    @db_session
     def test_post_user_with_no_payload(self, client, request):
 
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
         prefix = config.get("jwt_header_prefix")
         self.headers.update({"Authorization": prefix + " " + access_token})
         # post no payload
@@ -53,10 +52,10 @@ class TestUsers():
             headers=self.headers,
             protocol=self.scheme
         )
+
         # should be BAD REQUEST
         assert resp.status == HTTP_BAD_REQUEST
 
-    @db_session
     def test_post_user_with_invalid_data(self, client):
 
         data = self.another_user.copy()
@@ -199,7 +198,7 @@ class TestUserDetail():
 
     def test_get_user_with_invalid_uuid(self, client, request):
 
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
         prefix = config.get("jwt_header_prefix")
         self.headers.update({"Authorization": prefix + " " + access_token})
         # with invalid uuid
@@ -213,7 +212,7 @@ class TestUserDetail():
 
     def test_get_user_with_random_uuid(self, client, request):
 
-        access_token = request.config.cache.get("access_token", None)
+        access_token = request.config.cache.get("access_token", "")
         prefix = config.get("jwt_header_prefix")
         self.headers.update({"Authorization": prefix + " " + access_token})
         # with random uuid

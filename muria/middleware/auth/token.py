@@ -158,8 +158,8 @@ class Jwt(Tacen):
 
     def unload(self, token, options={}):
         """Unload jwt token value."""
-        decoded = self.verify_token(token, options)
-        token_value = decoded.get("data", None)
+        payload = self.verify_token(token, options)
+        token_value = payload.get("data", None)
         if not token_value:
             raise HTTPUnauthorized(
                 description='Invalid JWT Credentials',
