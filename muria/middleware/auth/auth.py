@@ -146,7 +146,7 @@ class Auth(object):
         now = datetime.utcnow().timestamp()
         data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
         token = self.tokenizer.create_token(data)
-        signature = {"signature": token.split(".")[2]}
+        signature = {"signature": self._get_token_key(token)}
         refresh_token = self.refresher.create_token(signature)
         jwt = JwtToken(
             token_type=self._auth_config.get("jwt_header_prefix"),
@@ -155,7 +155,9 @@ class Auth(object):
             refresh_expires_in=int(self._auth_config.get("jwt_refresh_exp")),
             issued_at=now,
             refresh_token=refresh_token,
-            user=user
+            user=user,
+            access_key=self._get_token_key(token),
+            refresh_key=self._get_token_key(refresh_token)
         )
         resp.media = jwt.unload()
         resp.status = HTTP_OK
@@ -202,16 +204,19 @@ class Auth(object):
                     old_token_payload.update({"rand": urandom(3).hex()})
                     user = User.get(id=old_token_payload["id"])
                     token = self.tokenizer.create_token(old_token_payload)
-                    signature = {"signature": token.split(".")[2]}
+                    signature = {"signature": self._get_token_key(token)}
                     refresh_token = self.refresher.create_token(signature)
                     jwt = JwtToken(
                         token_type=self._auth_config.get("jwt_header_prefix"),
                         access_token=token,
                         expires_in=self._auth_config.get("jwt_token_exp"),
-                        refresh_expires_in=self._auth_config.get("jwt_refresh_exp"),
+                        refresh_expires_in=self._auth_config.get(
+                            "jwt_refresh_exp"),
                         issued_at=now,
                         refresh_token=refresh_token,
-                        user=user
+                        user=user,
+                        access_key=self._get_token_key(token),
+                        refresh_key=self._get_token_key(refresh_token)
                     )
                     self._revoke_token(old_token)
                     resp.media = jwt.unload()
@@ -237,11 +242,11 @@ class Auth(object):
 
     @db_session
     def _revoke_token(self, token):
-        jwt = JwtToken.get(access_token=token)
+        jwt = JwtToken.get(access_key=self._get_token_key(token))
         if jwt:
             if jwt.revoked is False:
                 jwt.revoked = True
-            expiry = jwt.get_expires_at()
+            expiry = jwt.get_expires_at() - datetime.utcnow().timestamp()
             self._cache_revoked_token(token, expiry)
             return True
         else:
@@ -251,7 +256,7 @@ class Auth(object):
         if not self.cache:
             return
         try:
-            self.cache.set(token[-32:], token, expiry)
+            self.cache.set(self._get_token_key(token), token, expiry)
         except Exception:
             return
 
@@ -259,7 +264,17 @@ class Auth(object):
     def is_token_revoked(self, token):
         if self.cache:
             try:
-                return self.cache.get(token[-32:]) == token
+                return self.cache.get(self._get_token_key(token)) == token
             except Exception:
                 pass
-        return JwtToken.exists(access_token=token, revoked=True)
+        return JwtToken.exists(access_key=self._get_token_key(token),
+                               revoked=True)
+
+    @staticmethod
+    def _get_token_key(token):
+        parts = token.split(".")
+
+        if len(parts) != 3:
+            raise HTTPUnauthorized(
+                description='Invalid Token: Broken Token Format')
+        return parts[2]

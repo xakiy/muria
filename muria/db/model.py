@@ -77,8 +77,8 @@ def define_entities(db):
         _discriminator_ = "base"
         id = PrimaryKey(int, size=64, auto=True)
         token_type = Discriminator(str)
-        access_token = Required(LongStr, unique=True, index=True)
-        refresh_token = Optional(LongStr, index=True)
+        access_token = Required(LongStr)
+        refresh_token = Optional(LongStr)
         revoked = Required(bool, default=False)
         issued_at = Optional(float, default=datetime.utcnow().timestamp)
         expires_in = Optional(int, default=300)
@@ -124,3 +124,5 @@ def define_entities(db):
 
     class JwtToken(BaseToken, EntityMixin):
         _discriminator_ = "jwt"
+        access_key = Required(str, 43, unique=True, index=True)
+        refresh_key = Optional(str, 43, unique=True, index=True)
