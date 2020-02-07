@@ -227,9 +227,6 @@ class Auth(object):
             raise HTTPBadRequest()
 
     def revoke(self, req, resp):
-        # TODO:
-        # 1. revoke only token for soft revoke
-        # 2. revoke both for hard revoke
         token = self.tokenizer.parse_token_header(req)
         if self.is_token_revoked(token):
             raise HTTPUnauthorized()
@@ -237,15 +234,15 @@ class Auth(object):
         payload = self.tokenizer.unload(token)
         if payload.get("id") and self._revoke_token(token):
             resp.status = HTTP_RESET_CONTENT
-        else:
-            raise HTTPBadRequest()
 
     @db_session
     def _revoke_token(self, token):
+        # TODO:
+        # 1. revoke only token for soft revoke
+        # 2. revoke both for hard revoke
         jwt = JwtToken.get(access_key=self._get_token_key(token))
-        if jwt:
-            if jwt.revoked is False:
-                jwt.revoked = True
+        if jwt and jwt.revoked is False:
+            jwt.revoked = True
             expiry = jwt.get_expires_at() - datetime.utcnow().timestamp()
             self._cache_revoked_token(token, expiry)
             return True
@@ -253,19 +250,24 @@ class Auth(object):
             return False
 
     def _cache_revoked_token(self, token, expiry=1800):
-        if not self.cache:
-            return
-        try:
-            self.cache.set(self._get_token_key(token), token, expiry)
-        except Exception:
-            return
+        if self.cache:
+            try:
+                # expire argument must be int
+                self.cache.set(self._get_token_key(token), token, int(expiry))
+            except Exception as err:
+                # TODO:
+                # use logger here
+                pass
 
     @db_session
     def is_token_revoked(self, token):
         if self.cache:
             try:
-                return self.cache.get(self._get_token_key(token)) == token
-            except Exception:
+                key = self._get_token_key(token)
+                return self.cache.get(key) == token
+            except Exception as err:
+                # TODO:
+                # use logger here
                 pass
         return JwtToken.exists(access_key=self._get_token_key(token),
                                revoked=True)
@@ -275,6 +277,5 @@ class Auth(object):
         parts = token.split(".")
 
         if len(parts) != 3:
-            raise HTTPUnauthorized(
-                description='Invalid Token: Broken Token Format')
+            return ''
         return parts[2]

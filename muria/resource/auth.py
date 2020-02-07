@@ -11,18 +11,30 @@ from falcon import (
 class Authentication(Resource):
     """Authenticate user with their credentials and issue token for them."""
 
-    def on_post(self, req, resp):
+    def on_get(self, req, resp):
+        # verify token
         if req.context.auth:
-            route = ("acquire", "verify", "refresh", "revoke")
-            if req.params and req.params.get("mode"):
-                mode = req.params.get("mode")
-                if mode in route:
-                    responder = getattr(req.context.auth, mode)
-                    responder(req, resp)
-                else:
-                    # no such mode
-                    raise HTTPBadRequest(description="No such mode implemented")
-            else:
-                raise HTTPMissingParam(param_name="mode")
+            req.context.auth.verify(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE
+
+    def on_post(self, req, resp):
+        # acquire token
+        if req.context.auth:
+            req.context.auth.acquire(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE
+
+    def on_patch(self, req, resp):
+        # refresh token
+        if req.context.auth:
+            req.context.auth.refresh(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE
+
+    def on_delete(self, req, resp):
+        # revoke token
+        if req.context.auth:
+            req.context.auth.revoke(req, resp)
         else:
             resp.status = HTTP_SERVICE_UNAVAILABLE
