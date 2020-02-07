@@ -23,17 +23,15 @@ class Middlewares():
             jwt_refresh_exp=config.getint("jwt_refresh_exp"),
             audience=config.get("jwt_audience"),
             issuer=config.get("jwt_issuer"),
-            exempt_routes=[
-                "/v1/ping"
-            ],
+            exempt_routes=[],
             exempt_methods=[
                 "HEAD",
                 "OPTIONS"
             ],
             cache=cache_factory(provider=config.get("cache_provider"),
                                 host=config.get("cache_host"),
-                                port=config.get("cache_port"),
-                                prefix="auth_middleware"),
+                                port=config.getint("cache_port"),
+                                prefix="authx"),
         )
 
         cors_debug = config.getint("cors_log_level") \
