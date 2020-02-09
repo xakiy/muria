@@ -23,10 +23,16 @@ def json_deserializer(key, val, flags):
 
 
 def cache_factory(provider="memcache", host="localhost",
-                  port=None, prefix=None):
+                  port=None, socket=None, prefix=None):
 
     if provider == "memcached":
+        if socket:
+            host = socket
+        else:
+            port = port if port else 11211
+            host = (host, port)
+
         return base.Client(
-            (host, port),
+            server=host,
             serializer=json_serializer,
             deserializer=json_deserializer, key_prefix=prefix)

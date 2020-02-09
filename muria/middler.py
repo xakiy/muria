@@ -31,6 +31,7 @@ class Middlewares():
             cache=cache_factory(provider=config.get("cache_provider"),
                                 host=config.get("cache_host"),
                                 port=config.getint("cache_port"),
+                                socket=config.get("cache_socket"),
                                 prefix="authx"),
         )
 
