@@ -2,10 +2,9 @@
 
 import pytest
 from falcon import testing
-from muria.init import config
-from tests import config_file  # initiating env setup
+from muria import config
 from muria.wsgi import app
-from muria.db.model import User
+from muria.db import User
 from pony.orm import db_session
 
 
@@ -21,8 +20,8 @@ def properties(request):
     request.cls.scheme = "https"
 
     headers = {
-        "Host": config.get("security", "issuer"),
-        "Origin": config.get("security", "audience"),
+        "Host": config.get("jwt_issuer"),
+        "Origin": config.get("jwt_audience"),
     }
     request.cls.headers = headers
 
@@ -38,11 +37,11 @@ def properties(request):
         "jinshi": "l",
         "tempat_lahir": "Makasar",
         "tanggal_lahir": "1983-01-28",
-        "tanggal_masuk": "2019-08-12",
         "username": "rijalul.ghad",
+        "situs": "https://somesite.com",
         "email": "rijalul.ghad@gmail.com",
-        "password": hashed,
-        "salt": salt,
+        "password": password_string,
+        "salt": '',
         "suspended": False,
     }
 

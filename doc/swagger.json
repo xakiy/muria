@@ -1,0 +1,558 @@
+{
+  "info": {
+    "description": "Sistem pengelolaan informasi pesantren, yang meliputi data penghuni pondok, asrama, dan bank data santri.",
+    "contact": {
+      "name": "Ahmad Ghulam Zakiy",
+      "email": "ghulam.zakiy@gmail.com",
+      "url": "https://twitter.com/xakiy"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "title": "Muria Magna API",
+    "version": "1.0.0"
+  },
+  "host": "api.krokod.net",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json",
+    "multipart/form-data"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "auth",
+      "description": "authentication end point"
+    },
+    {
+      "name": "user",
+      "description": "user account information"
+    }
+  ],
+  "basePath": "/v1",
+  "paths": {
+    "/auth": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Ping auth end-point",
+        "operationId": "pingAuth",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ping response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Authenticate user with their credentials",
+        "operationId": "authUser",
+        "consumes": [
+          "application/json",
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "body",
+            "name": "credentials",
+            "required": true,
+            "description": "User credentials",
+            "schema": {
+              "type": "object",
+              "required": [
+                "username",
+                "password"
+              ],
+              "properties": {
+                "username": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acquire basic token",
+            "schema": {
+              "$ref": "#/definitions/BasicToken"
+            }
+          },
+          "400": {
+            "description": "Bad request dou to invalid credentials"
+          }
+        }
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Verifies submitted token",
+        "operationId": "verifyToken",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "body",
+            "name": "access_token",
+            "required": true,
+            "description": "access token",
+            "schema": {
+              "type": "object",
+              "required": [
+                "access_token"
+              ],
+              "properties": {
+                "access_token": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified token",
+            "schema": {
+              "$ref": "#/definitions/BasicToken"
+            }
+          },
+          "400": {
+            "description": "Bad request dou to invalid access token"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Refresh and old token",
+        "operationId": "refreshToken",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "body",
+            "name": "token",
+            "required": true,
+            "description": "token pair",
+            "schema": {
+              "type": "object",
+              "required": [
+                "access_token",
+                "refresh_token"
+              ],
+              "properties": {
+                "access_token": {
+                  "type": "string"
+                },
+                "refresh_token": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refreshed token",
+            "schema": {
+              "$ref": "#/definitions/BasicToken"
+            }
+          },
+          "400": {
+            "description": "Bad request dou to invalid token pair"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "List of users",
+        "description": "Get list of users",
+        "operationId": "listUsers",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "type": "string",
+            "required": true,
+            "description": "Auth token"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "type": "string",
+            "required": false,
+            "description": "Search user based on their username"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of registered users",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "users": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/User"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Add new user",
+        "description": "Add new additional user",
+        "operationId": "addUser",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "body",
+            "required": true,
+            "name": "user",
+            "schema": {
+              "$ref": "#/definitions/User"
+            },
+            "description": "user data"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User added successfully",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Bad request dou to bad parameters"
+          },
+          "409": {
+            "description": "Conflicted, user already exist"
+          },
+          "422": {
+            "description": "Unprocessable, invalids params found"
+          },
+          "500": {
+            "description": "Internal service error"
+          }
+        }
+      }
+    },
+    "/users/{id:uuid}": {
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Delete user",
+        "description": "Delete specific user based on their ID",
+        "operationId": "delUser",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "path",
+            "name": "id:uuid",
+            "type": "string",
+            "format": "uuid",
+            "required": true
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "No user found"
+          },
+          "410": {
+            "description": "Gone, user deleted successfully",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "422": {
+            "description": "Unprocessable, invalids params found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Show user data",
+        "description": "Get specific user information",
+        "operationId": "getUser",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "path",
+            "name": "id:uuid",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "user id in uuid format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data of registered user",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "404": {
+            "description": "No user found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Edit user data",
+        "description": "Modify registered user data",
+        "operationId": "editUser",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "origin",
+            "type": "string",
+            "required": true,
+            "description": "CORS request origin"
+          },
+          {
+            "in": "path",
+            "name": "id:uuid",
+            "type": "string",
+            "format": "uuid",
+            "required": true
+          },
+          {
+            "in": "body",
+            "required": true,
+            "name": "user",
+            "schema": {
+              "$ref": "#/definitions/User"
+            },
+            "description": "user data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User aditted successfully"
+          },
+          "404": {
+            "description": "No user found"
+          },
+          "422": {
+            "description": "Unprocessable, invalids params found"
+          }
+        }
+      }
+    }
+  },
+  "swagger": "2.0",
+  "definitions": {
+    "BasicToken": {
+      "type": "object",
+      "properties": {
+        "expires_in": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "access_token": {
+          "type": "string"
+        },
+        "refresh_token": {
+          "type": "string"
+        },
+        "issued_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "access_token",
+        "refresh_token"
+      ]
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "situs": {
+          "type": "string",
+          "format": "url",
+          "default": null,
+          "x-nullable": true
+        },
+        "tanggal_lahir": {
+          "type": "string",
+          "format": "date",
+          "x-nullable": true
+        },
+        "jinshi": {
+          "type": "string",
+          "enum": [
+            "l",
+            "p"
+          ]
+        },
+        "suspended": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "username": {
+          "type": "string",
+          "pattern": "^[a-z]+(?:[_.]?[a-zA-Z0-9]){7,28}$"
+        },
+        "nama": {
+          "type": "string"
+        },
+        "tanggal_masuk": {
+          "type": "string",
+          "format": "date"
+        },
+        "tempat_lahir": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "email",
+        "id",
+        "jinshi",
+        "nama",
+        "username"
+      ]
+    }
+  }
+}

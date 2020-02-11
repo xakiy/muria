@@ -4,14 +4,36 @@ from falcon import media
 from functools import partial
 import datetime
 
+
 try:
-    import rapidjson as json
+    import orjson as json
 except ImportError:
-    import json
+    try:
+        import rapidjson as json
+    except ImportError:
+        import json
 
+
+if json.__name__ == "orjson":
+    # OPT_STRICT_INTEGER = 1
+    # OPT_SERIALIZE_UUID = 32
+    json_dumper = partial(
+        json.dumps,
+        option=json.OPT_SERIALIZE_UUID | json.OPT_STRICT_INTEGER)
+    json_loader = json.loads
+
+if json.__name__ == "rapidjson":
+    # UM_NONE = 0,
+    # UM_CANONICAL = 1<<0, // UUID in plain 32 hex chars
+    # UM_HEX = 1<<1 // canonical OR 32 hex chars in a row
+    json_dumper = partial(
+        json.dumps,
+        datetime_mode=json.DM_ISO8601,
+        uuid_mode=json.UM_CANONICAL)
+    json_loader = json.loads
+
+elif json.__name__ == "json":
     class ConvertionEncoder(json.JSONEncoder):
-        """JSON standard lib encoder."""
-
         def default(self, obj):
             """Mengubah datetime sebagai string biasa."""
             if isinstance(obj, datetime.datetime) or \
@@ -30,29 +52,10 @@ except ImportError:
                 return json.JSONEncoder.default(self, obj)
             except TypeError:
                 return str(obj)
+    json_dumper = partial(json.dumps, cls=ConvertionEncoder)
+    json_loader = json.loads
 
-
-# NOTE: All date type is dumped in ISO8601 format
-if json.__name__ == "rapidjson":
-    # UM_NONE = 0,
-    # UM_CANONICAL = 1<<0, // 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    # UM_HEX = 1<<1 // canonical OR 32 hex chars in a row
-    JSONHandler = media.JSONHandler(
-        dumps=partial(
-            json.dumps,
-            datetime_mode=json.DM_ISO8601,
-            uuid_mode=json.UM_CANONICAL
-        ),
-        loads=json.loads
-    )
-else:
-    JSONHandler = media.JSONHandler(
-        dumps=partial(
-            json.dumps,
-            cls=ConvertionEncoder
-        ),
-        loads=json.loads
-    )
+JSONHandler = media.JSONHandler(dumps=json_dumper, loads=json_loader)
 
 
 def dumpAsJSON(source):
@@ -60,21 +63,4 @@ def dumpAsJSON(source):
 
     NOTE: All date type is dumped in ISO8601 format
     """
-    if json.__name__ == "rapidjson":
-        # UM_NONE = 0,
-        # UM_CANONICAL = 1<<0 like
-        # 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        # UM_HEX = 1<<1 // canonical OR 32 hex chars in a row
-        # pure JSON
-        output = json.dumps(
-            source, datetime_mode=json.DM_ISO8601, uuid_mode=json.UM_CANONICAL
-        )  # speed 1.8xx
-    elif json.__name__ == 'json':
-        # pure JSON
-        # output = rjson.dumps(source, default=datetimeToISO) # speed 1.6xx
-        # output = ujson.dumps(source)
-        output = json.dumps(source, cls=ConvertionEncoder)  # speed 1.8xx
-        # output = sjson.dumps(sjson.loads(source), use_decimal=False)
-        # output = json.dumps(source) #not work for datetime.date field
-
-    return output
+    return json_dumper(source)

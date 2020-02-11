@@ -51,7 +51,8 @@ class Surel(fields.Email):
         return str(value).lower()
 
 
-class _Credentials(Schema):
+class Credentials(Schema):
+    # min length is 8, max length is 30
     username = fields.String(
         required=True,
         validate=Regexp(r"^[a-z]+(?:[_.]?[a-zA-Z0-9]){7,28}$", re.U & re.I),
@@ -59,20 +60,28 @@ class _Credentials(Schema):
     password = fields.String(validate=Length(min=8, max=40), load_only=True)
 
 
-class _User(_Credentials):
+class User(Credentials):
     id = UID(required=True, default=uuid.uuid4)
     nama = fields.String(required=True)
     jinshi = fields.String(required=True, validate=OneOf(["l", "p"]))
     tempat_lahir = fields.String()
     tanggal_lahir = Tanggal(allow_none=True)
     tanggal_masuk = Tanggal()
-    situs = fields.URL()
+    situs = fields.URL(allow_none=True, missing=None)
     email = Surel(required=True)
-    suspended = fields.Boolean(required=True, dump_only=True)
+    suspended = fields.Boolean(default=False, dump_only=True)
 
 
-class _BasicToken(Schema):
+class BaseToken(Schema):
     access_token = fields.String(required=True)
     refresh_token = fields.String(required=True)
+    token_type = fields.String(required=True)
     issued_at = fields.String()
     expires_in = fields.Integer()
+    refresh_expires_in = fields.Integer(load_only=True)
+
+
+class JwtToken(BaseToken):
+    user = User()
+    access_key = fields.String(size=43)
+    refresh_key = fields.String(size=43)

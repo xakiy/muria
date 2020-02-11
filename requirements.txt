@@ -1,0 +1,14 @@
+apispec==3.1.0
+Cython==0.29.14
+falcon==2.0.0
+falcon-apispec==0.3.0
+falcon-cors==1.1.7
+falcon-require-https==0.1.0
+gunicorn==20.0.4
+marshmallow==3.3.0
+pony==0.7.12
+psycopg2==2.8.4
+pymemcache==3.0.0
+python-jose==3.1.0
+PyMySQL==0.9.3
+python-rapidjson==0.9.1

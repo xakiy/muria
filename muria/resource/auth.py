@@ -1,72 +1,40 @@
-"""User Resource."""
+"""Authentication Resource."""
 
-from . import Resource
-from muria.init import user_authentication, DEBUG
-from muria.common.error import InvalidTokenError
-from pony.orm import db_session
+from muria.common.resource import Resource
 from falcon import (
-    HTTP_OK,
+    HTTP_SERVICE_UNAVAILABLE,
+    HTTPMissingParam,
     HTTPBadRequest
 )
 
 
 class Authentication(Resource):
-    """
-    Resource Authentication.
+    """Authenticate user with their credentials and issue token for them."""
 
-    Menangani otentifikasi user, termasuk mengeluarkan tokens.
-    """
-
-    @db_session
     def on_get(self, req, resp):
-
-        resp.status = HTTP_OK
-        resp.set_header("WWW-Authenticate", "Bearer")
-        if DEBUG:
-            resp.media = {"WWW-Authenticate": "Bearer"}
-
-    @db_session
-    def on_post(self, req, resp):
-        if req.media:
-            token = user_authentication.authenticate_user(
-                username=req.media.get("username", ""),
-                password=req.media.get("password", "")
-            )
-            resp.status = HTTP_OK
-            resp.media = token
+        # verify token
+        if req.context.auth:
+            req.context.auth.verify(req, resp)
         else:
-            raise HTTPBadRequest()
+            resp.status = HTTP_SERVICE_UNAVAILABLE
 
+    def on_post(self, req, resp):
+        # acquire token
+        if req.context.auth:
+            req.context.auth.acquire(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE
 
-class Verification(Resource):
-    """
-    Resource Verification
+    def on_patch(self, req, resp):
+        # refresh token
+        if req.context.auth:
+            req.context.auth.refresh(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE
 
-    Memverifikasi token yang dikirimkan oleh klien
-    """
-
-    def on_post(self, req, resp, **params):
-        # TODO:
-        # implement some cache validations on the user
-        try:
-            token = user_authentication.check_token(
-                req.media.get("access_token")
-            )
-            content = {"access_token": token}
-            resp.status = HTTP_OK
-            resp.media = content
-        except InvalidTokenError as error:
-            raise HTTPBadRequest(
-                code=error.code,
-                description=str(error.status)
-            )
-
-
-class Refresh(Resource):
-    def on_post(self, req, resp, **params):
-        access_token = req.media.get("access_token")
-        refresh_token = req.media.get("refresh_token")
-        resp.media = user_authentication.refresh_token(
-            access_token, refresh_token
-        )
-        resp.status = HTTP_OK
+    def on_delete(self, req, resp):
+        # revoke token
+        if req.context.auth:
+            req.context.auth.revoke(req, resp)
+        else:
+            resp.status = HTTP_SERVICE_UNAVAILABLE

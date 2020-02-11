@@ -1,15 +1,23 @@
 """Route of Resources."""
 
-from muria.resource import auth
-# from muria.resource import account
-from muria.resource import profile
+from muria.resource import (
+    Pong,
+    Authentication,
+    Users,
+    UserDetail,
+    UserStats
+)
 
-base_path = "/v1"
 static_route = []
 resource_route = []
 
-resource_route.append(("/auth", auth.Authentication()))
-resource_route.append(("/auth/verify", auth.Verification()))
-resource_route.append(("/auth/refresh", auth.Refresh()))
+resource_route.append(("/ping", Pong()))
 
-resource_route.append(("/profile", profile.Profile()))
+# this should be done automatically and
+# using config.get("api_auth_path")
+resource_route.append(("/auth", Authentication()))
+
+resource_route.append(("/users", Users()))
+resource_route.append(("/users/{id:uuid}", UserDetail()))
+
+resource_route.append(("/stats/user", UserStats()))

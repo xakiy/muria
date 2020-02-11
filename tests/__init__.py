@@ -1,11 +1,9 @@
 import os
 
-
-config_file = os.environ.get("MURIA_SETUP", "")
-
-if config_file is None or config_file is "":
-    os.environ["MURIA_SETUP"] = os.path.join(
+# initialize env testing configurations
+try:
+    os.environ["MURIA_CONFIG"]
+except KeyError:
+    os.environ["MURIA_CONFIG"] = os.path.join(
         os.path.dirname(__file__), "settings.ini"
     )
-
-config_file = os.environ.get("MURIA_SETUP")

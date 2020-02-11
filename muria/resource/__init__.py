@@ -1,8 +1,13 @@
-from muria.init import config
+from .ping import Pong
+from .auth import Authentication
+from .user import Users, UserDetail
+from .stats import UserStats
 
 
-class Resource(object):
-    """Resource Base Class."""
-
-    def __init__(self, config=config, **params):
-        self.config = config
+__all__ = [
+    Pong,
+    Authentication,
+    Users,
+    UserDetail,
+    UserStats
+]

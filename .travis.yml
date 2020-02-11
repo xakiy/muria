@@ -1,0 +1,45 @@
+language: python
+
+stages:
+  - test
+
+cache: pip
+
+services:
+  - sqlite3
+  - mysql
+  - postgresql
+
+env:
+  - MURIA_MODE=SQLITE
+  - MURIA_MODE=MYSQL
+  - MURIA_MODE=POSTGRESQL
+
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+  - "pypy3"
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y -qq sqlite3 libsqlite3-dev libpq-dev
+
+install:
+  - pip install --upgrade pip
+  - pip install -r requirements-dev.txt
+
+jobs:
+  allow_failures:
+    - python: "pypy3"
+
+before_script:
+  - sh -c "if [ '$MURIA_MODE' = 'POSTGRESQL' ]; then psql -c 'CREATE DATABASE travis_ci_test;' -U postgres; fi"
+  - sh -c "if [ '$MURIA_MODE' = 'MYSQL' ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_ci_test;' -u travis; fi"
+
+script:
+  - coverage run --source=muria,tests -m pytest tests -xvv
+
+after_success:
+  - coverage report -m
+
