@@ -38,7 +38,7 @@ def another_user(request):
     request.cls.another_user = user
 
 
-@pytest.mark.usefixtures("client", "url", "properties", "another_user")
+@pytest.mark.usefixtures("client", "url", "another_user")
 class TestUsers():
 
     def test_post_user_with_no_payload(self, client, request):
@@ -193,7 +193,7 @@ class TestUsers():
         assert resp.status == HTTP_NOT_FOUND
 
 
-@pytest.mark.usefixtures("client", "url", "properties", "another_user")
+@pytest.mark.usefixtures("client", "url", "another_user")
 class TestUserDetail():
 
     def test_get_user_with_invalid_uuid(self, client, request):

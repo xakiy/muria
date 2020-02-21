@@ -81,7 +81,7 @@ class Users(Resource):
             resp.media = {
                 "count": found,
                 "users": [
-                    User.unload(user) for user in users
+                    user.unload() for user in users
                 ]
             }
             resp.status = HTTP_OK

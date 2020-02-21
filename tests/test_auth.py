@@ -20,7 +20,7 @@ def url(request):
                                    config.get("api_auth_path", "auth"))
 
 
-@pytest.mark.usefixtures("client", "url", "properties")
+@pytest.mark.usefixtures("client", "url")
 class TestAuth:
 
     def test_no_credentials(self, client):
