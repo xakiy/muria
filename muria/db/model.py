@@ -124,5 +124,7 @@ def define_entities(db):
 
     class JwtToken(BaseToken, EntityMixin):
         _discriminator_ = "jwt"
+        # these access_key and refresh_key indexes is a workaround
+        # for LongStr full-text index key constraints
         access_key = Required(str, 43, unique=True, index=True)
         refresh_key = Optional(str, 43, unique=True, index=True)

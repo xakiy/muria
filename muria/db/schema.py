@@ -83,5 +83,5 @@ class BaseToken(Schema):
 
 class JwtToken(BaseToken):
     user = User()
-    access_key = fields.String(size=43)
-    refresh_key = fields.String(size=43)
+    access_key = fields.String(size=43, load_only=True)
+    refresh_key = fields.String(size=43, load_only=True)
