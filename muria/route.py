@@ -5,6 +5,7 @@ from muria.resource import (
     Authentication,
     Users,
     UserDetail,
+    Profile,
     UserStats
 )
 
@@ -19,5 +20,7 @@ resource_route.append(("/auth", Authentication()))
 
 resource_route.append(("/users", Users()))
 resource_route.append(("/users/{id:uuid}", UserDetail()))
+
+resource_route.append(("/profile", Profile()))
 
 resource_route.append(("/stats/user", UserStats()))
