@@ -261,21 +261,19 @@ class Auth(object):
 
     @db_session
     def is_token_revoked(self, token):
+        key = self._get_token_key(token)
         if self.cache:
             try:
-                key = self._get_token_key(token)
                 return self.cache.get(key) == token
             except Exception as err:
                 # TODO:
                 # use logger here
                 pass
-        return JwtToken.exists(access_key=self._get_token_key(token),
-                               revoked=True)
+        return JwtToken.exists(access_key=key, revoked=True)
 
     @staticmethod
     def _get_token_key(token):
         parts = token.split(".")
-
         if len(parts) != 3:
             return ''
         return parts[2]
