@@ -6,8 +6,8 @@
     License: MIT License, see LICENSE for more details.
 """
 from .version import name, version, author
-from muria.util import Configuration
-from muria.util import logging
+from .util import Configuration
+from .util import logging
 import os
 
 
@@ -22,6 +22,7 @@ __author__ = author
 __license__ = 'MIT License'
 
 config = Configuration(env_ini=ini_file, env_mode=ini_section)
+config.update({"dir_app": os.path.abspath(os.path.dirname(__file__))})
 
 API_NAME = config.get("api_name")
 API_VERSION = config.get("api_version")
