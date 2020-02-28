@@ -45,6 +45,9 @@ class _Configuration(SafeConfigParser):
         if not bool(self.read(config_file).count(env_ini)):
             raise IOError("File konfigurasi %s tak terbaca!" % env_ini)
 
+        # Muria absolute directory
+        self.set("DEFAULT", "dir_app", str(Path(__file__).parent.parent))
+
         # points to working directory where Muria is invoked
         self.set("DEFAULT", "dir_ref", str(Path.cwd()))
 
