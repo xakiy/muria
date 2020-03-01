@@ -73,7 +73,7 @@ def get_params(config):
 
 def bind(connection, params):
     if params["provider"] == "mysql":
-        if params["unix_socket"]:
+        if params.get("unix_socket"):
             try:
                 # try socket first
                 connection.bind(**params)
