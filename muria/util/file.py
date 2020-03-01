@@ -44,8 +44,11 @@ class FormStore(object):
         logger.info("Temporary File Path: {0}".format(temp_file))
 
         try:
+            # DEPRECATED:
+            # In python 3.5 'open' hasn't been able to open path like object
+            # so we make string as workaround.
             # Then write the stream data to that temporary file
-            temp_obj = open(temp_file, "x+b")
+            temp_obj = open(str(temp_file), "x+b")
 
             shutil.copyfileobj(raw, temp_obj)
 
