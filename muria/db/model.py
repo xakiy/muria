@@ -3,7 +3,7 @@ import uuid
 import hashlib
 import binascii
 from os import urandom
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from .mixin import EntityMixin
 from pony.orm import (
     PrimaryKey,
@@ -29,6 +29,7 @@ def define_entities(db):
         tanggal_masuk = Optional(date, default=lambda: date.today())
         username = Required(str, 40, unique=True)
         situs = Optional(str, default="")
+        picture = Optional(str, nullable=True)
         email = Required(str, 60, unique=True)
         password = Required(str)
         salt = Optional(str)
