@@ -56,22 +56,24 @@ class _Configuration(SafeConfigParser):
         else:
             self.api_mode = 'TEST'
 
-        # This is Heroku DATABASE_URL env extractor
+        # Heroku DATABASE_URL env extractor
         if self.api_mode == 'DATABASE_URL':
             try:
+                # first try to use available env config
                 url = os.environ[self.api_mode]
+                parsed = urlparse(url)
+                self.set(self.api_mode, "db_engine", parsed.scheme)
+                self.set(self.api_mode, "db_name", os.path.basename(parsed.path))
+                user, password = \
+                    [i.split(':') for i in parsed.netloc.split('@')][0]
+                host, port = [i.split(':') for i in parsed.netloc.split('@')][1]
+                self.set(self.api_mode, "db_user", user)
+                self.set(self.api_mode, "db_password", password)
+                self.set(self.api_mode, "db_host", host)
+                self.set(self.api_mode, "db_port", port)
             except KeyError:
-                raise EnvironmentError("No DATABASE_URL defined!")
-            parsed = urlparse(url)
-            self.set(self.api_mode, "db_engine", parsed.scheme)
-            self.set(self.api_mode, "db_name", os.path.basename(parsed.path))
-            user, password = \
-                [i.split(':') for i in parsed.netloc.split('@')][0]
-            host, port = [i.split(':') for i in parsed.netloc.split('@')][1]
-            self.set(self.api_mode, "db_user", user)
-            self.set(self.api_mode, "db_password", password)
-            self.set(self.api_mode, "db_host", host)
-            self.set(self.api_mode, "db_port", port)
+                # fallback to config values
+                pass
 
         # Directories initialization
         permissions = {
