@@ -1,8 +1,8 @@
 from muria import config
-from .setup import initiate
+from .setup import connect
 
 
-connection = initiate(config)
+connection = connect(config)
 User = connection.User
 BaseToken = connection.BaseToken
 JwtToken = connection.JwtToken
