@@ -4,10 +4,10 @@ from muria.middleware.require_https import RequireHTTPS
 from muria.middleware.auth import Auth
 from muria.middleware.cors import CORS
 from muria.util import cache_factory
+from muria.middleware.multipart import Multipart
 
 
-class Middlewares():
-
+class Middlewares:
     def __init__(self, config, **kwargs):
         self.middlewares = []
 
@@ -24,19 +24,21 @@ class Middlewares():
             audience=config.get("jwt_audience"),
             issuer=config.get("jwt_issuer"),
             exempt_routes=[],
-            exempt_methods=[
-                "HEAD",
-                "OPTIONS"
-            ],
-            cache=cache_factory(provider=config.get("cache_provider"),
-                                host=config.get("cache_host"),
-                                port=config.getint("cache_port"),
-                                socket=config.get("cache_socket"),
-                                prefix="authx"),
+            exempt_methods=["HEAD", "OPTIONS"],
+            cache=cache_factory(
+                provider=config.get("cache_provider"),
+                host=config.get("cache_host"),
+                port=config.getint("cache_port"),
+                socket=config.get("cache_socket"),
+                prefix="authx",
+            ),
         )
 
-        cors_debug = config.getint("cors_log_level") \
-            if config.getboolean("api_debug") else 30
+        cors_debug = (
+            config.getint("cors_log_level")
+            if config.getboolean("api_debug")
+            else 30
+        )
         cors = CORS(
             log_level=cors_debug,
             # false means disallow any random host to connect
@@ -60,6 +62,7 @@ class Middlewares():
         self.middlewares.append(RequireHTTPS())
         self.middlewares.append(cors.middleware)
         self.middlewares.append(auth.middleware)
+        self.middlewares.append(Multipart())
 
     def __call__(self):
         return self.middlewares
