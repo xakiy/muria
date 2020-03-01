@@ -42,7 +42,7 @@ class _Configuration(SafeConfigParser):
                 "File konfigurasi %s tidak ditemukan" % env_ini
             )
 
-        if not bool(self.read(config_file).count(env_ini)):
+        if not bool(self.read(str(config_file)).count(env_ini)):
             raise IOError("File konfigurasi %s tak terbaca!" % env_ini)
 
         # Muria absolute directory
