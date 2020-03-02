@@ -45,8 +45,7 @@ class FormStore(object):
 
         try:
             # DEPRECATED:
-            # In python 3.5 'open' hasn't been able to open path like object
-            # so we make string as workaround.
+            # python 3.5 'open' limitation to handle path like object
             # Then write the stream data to that temporary file
             temp_obj = open(str(temp_file), "x+b")
 
@@ -103,5 +102,7 @@ class StreamStore(object):
         file = Path(self.dest_dir, name)
         if not UUID(file.stem) and file.exists():
             raise IOError("File not found")
-        stream = open(file, "rb")
+        # DEPRECATED:
+        # python 3.5 'open' limitation to handle path like object
+        stream = open(str(file), "rb")
         return stream, file.stat().st_size
