@@ -42,8 +42,7 @@ class _Configuration(SafeConfigParser):
                 "File konfigurasi %s tidak ditemukan" % env_ini
             )
         # DEPRECATED:
-        # In python 3.5 'open' hasn't been able to open path like object
-        # so we make string as workaround.
+        # python 3.5 'open' limitation to handle path like object
         if not bool(self.read(str(config_file)).count(env_ini)):
             raise IOError("File konfigurasi %s tak terbaca!" % env_ini)
 

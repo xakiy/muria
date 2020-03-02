@@ -55,7 +55,9 @@ class ProfilePicture(Resource):
         # picture must be path-like object
         if picture.is_file():
             try:
-                stream_data = open(picture, "rb")
+                # DEPRECATED:
+                # python 3.5 'open' limitation to handle path like object
+                stream_data = open(str(picture), "rb")
                 stream_len = picture.stat().st_size
                 stream_type = mimetypes.guess_type(str(picture))[0]
                 return (stream_data, stream_len, stream_type)
