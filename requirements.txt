@@ -9,6 +9,7 @@ marshmallow==3.3.0
 Pillow==7.0.0
 pony==0.7.12
 psycopg2-binary==2.8.4
+psycopg2cffi==2.8.1;implementation_name='pypy'
 pymemcache==3.0.0
 python-jose==3.1.0
 python-magic==0.4.15
