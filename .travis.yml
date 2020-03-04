@@ -36,7 +36,6 @@ jobs:
 before_script:
   - sh -c "if [ '$MURIA_MODE' = 'POSTGRESQL' ]; then psql -c 'CREATE DATABASE travis_ci_test;' -U postgres; fi"
   - sh -c "if [ '$MURIA_MODE' = 'MYSQL' ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_ci_test;' -u travis; fi"
-  - sh -c "if [ '$TRAVIS_PYTHON_VERSION' = 'pypy3' ]; then pip install psycopg2cffi; fi"
 
 script:
   - coverage run --source=muria,tests -m pytest tests -xvv
