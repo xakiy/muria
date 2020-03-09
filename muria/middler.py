@@ -1,9 +1,11 @@
 """Middlewares setup."""
 
+from muria.util import cache_factory
 from muria.middleware.require_https import RequireHTTPS
 from muria.middleware.auth import Auth
 from muria.middleware.cors import CORS
-from muria.util import cache_factory
+from muria.middleware.rbac import RBAC
+from muria.conf.policy import Policy_Config
 from muria.middleware.multipart import Multipart
 
 
@@ -62,6 +64,7 @@ class Middlewares:
         self.middlewares.append(RequireHTTPS())
         self.middlewares.append(cors.middleware)
         self.middlewares.append(auth.middleware)
+        self.middlewares.append(RBAC(Policy_Config))
         self.middlewares.append(Multipart())
 
     def __call__(self):

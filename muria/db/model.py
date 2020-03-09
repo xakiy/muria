@@ -34,6 +34,7 @@ def define_entities(db):
         password = Required(str)
         salt = Optional(str)
         suspended = Required(bool, default=False)
+        responsibilities = Set("Responsibility", cascade_delete=True)
         tokens = Set("BaseToken")
 
         def get_user_id(self):
@@ -129,3 +130,21 @@ def define_entities(db):
         # for LongStr full-text index key constraints
         access_key = Required(str, 43, unique=True, index=True)
         refresh_key = Optional(str, 43, unique=True, index=True)
+
+    class Responsibility(db.Entity):
+        id = PrimaryKey(int, auto=True)
+        name = Required(str, unique=True)
+        info = Optional(str, nullable=True)
+        context = Required("Role_Context")
+        user = Required("User")
+
+    class Role(db.Entity):
+        name = PrimaryKey(str)
+        info = Optional(str)
+        context = Required("Role_Context")
+
+    class Role_Context(db.Entity):
+        name = PrimaryKey(str)
+        info = Optional(str)
+        roles = Set("Role")
+        responsibilities = Set("Responsibility")

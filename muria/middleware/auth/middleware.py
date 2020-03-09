@@ -41,6 +41,7 @@ class AuthMiddleware(object):
         return settings
 
     def process_resource(self, req, resp, resource, params):
+        req.context.auth = False
         # bypass token check and route to the auth responder for processing
         if req.path == self.auth.path:
             req.context.auth = self.auth
