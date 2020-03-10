@@ -1,7 +1,7 @@
 Muria
 =====
 
-[![Build Status](https://travis-ci.com/xakiy/muria.svg?branch=develop)](https://travis-ci.org/xakiy/muria) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.com/xakiy/muria.svg?branch=develop)](https://travis-ci.org/xakiy/muria) [![codebeat badge](https://codebeat.co/badges/d67c212f-c32c-4498-b0d8-252fb1edd26c)](https://codebeat.co/projects/github-com-xakiy-muria-develop) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Falcon boilerplate for API development with pony ORM
 
