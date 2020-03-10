@@ -52,22 +52,19 @@ class Jwt(Tacen):
 
     TOKEN_TYPE = "jwt"
 
-    def __init__(self, secret_key,
-                 algorithm, token_header_prefix,
-                 leeway=0, expiration_delta=30 * 60,
-                 issuer=None, audience=None, access_token=None,
-                 verify_claims=None, required_claims=None):
+    def __init__(self, secret_key, algorithm,
+                 issuer=None, audience=None, access_token=None):
 
         self.secret_key = secret_key
         self.algorithm = algorithm or 'HS256'
-        self.token_header_prefix = token_header_prefix or self.TOKEN_TYPE
-        self.leeway = timedelta(seconds=leeway)
-        self.expiration_delta = timedelta(seconds=expiration_delta)
+        self.token_header_prefix = self.TOKEN_TYPE
+        self.leeway = timedelta(seconds=0)
+        self.expiration_delta = timedelta(seconds=30 * 60)
         self.issuer = issuer
         self.audience = audience
         self.access_token = access_token
-        self.verify_claims = verify_claims or ['signature', 'exp', 'nbf', 'iat']
-        self.required_claims = required_claims or ['exp', 'iat', 'nbf']
+        self.verify_claims = ['signature', 'exp', 'nbf', 'iat']
+        self.required_claims = ['exp', 'iat', 'nbf']
 
         if 'aud' in self.verify_claims and not audience:
             raise ValueError('Audience parameter must be provided if '
@@ -76,6 +73,23 @@ class Jwt(Tacen):
         if 'iss' in self.verify_claims and not issuer:
             raise ValueError('Issuer parameter must be provided if '
                              '`iss` claim needs to be verified')
+
+
+
+    def set_prefix(self, prefix):
+        self.token_header_prefix = prefix or self.TOKEN_TYPE
+
+    def leeway_period(self, delta=0):
+        self.leeway = timedelta(seconds=delta)
+
+    def validity_period(self, delta=30 * 60):
+        self.expiration_delta = timedelta(seconds=delta)
+
+    def set_verify_claims(self, claims):
+        self.verify_claims = claims or ['signature', 'exp', 'nbf', 'iat']
+
+    def set_required_claims(self, claims):
+        self.required_claims = claims or ['exp', 'iat', 'nbf']
 
     def create_token(self, data_payload):
 
