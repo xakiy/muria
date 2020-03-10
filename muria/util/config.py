@@ -62,6 +62,14 @@ class _Configuration(SafeConfigParser):
         else:
             self.api_mode = 'TEST'
 
+        self._heroku_parse()
+
+        self._directory_init()
+
+        self.set("DEFAULT", "api_mode", self.api_mode)
+        return self[self.api_mode]
+
+    def _heroku_parse(self):
         # Heroku DATABASE_URL env extractor
         if self.api_mode == 'DATABASE_URL':
             try:
@@ -81,6 +89,7 @@ class _Configuration(SafeConfigParser):
                 # fallback to config values
                 pass
 
+    def _directory_init(self):
         # Directories initialization
         permissions = {
             "dir_doc": 0o766,
@@ -95,9 +104,6 @@ class _Configuration(SafeConfigParser):
                 folder = Path(directory)
                 folder.mkdir(parents=True, exist_ok=True)
                 folder.chmod(permissions.get(path, default_mode))
-
-        self.set("DEFAULT", "api_mode", self.api_mode)
-        return self[self.api_mode]
 
     def getlist(self, section, option, delim=" ", **kwargs):
         """Return value as a list."""
