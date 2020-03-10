@@ -74,8 +74,6 @@ class Jwt(Tacen):
             raise ValueError('Issuer parameter must be provided if '
                              '`iss` claim needs to be verified')
 
-
-
     def set_prefix(self, prefix):
         self.token_header_prefix = prefix or self.TOKEN_TYPE
 

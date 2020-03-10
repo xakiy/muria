@@ -72,22 +72,20 @@ class Auth(object):
         self.tokenizer = Jwt(
             secret_key=auth_config.get("secret_key"),
             algorithm=auth_config.get("algorithm"),
-            token_header_prefix=auth_config.get("jwt_header_prefix"),
-            leeway=auth_config.get("leeway"),
-            expiration_delta=auth_config.get("jwt_token_exp"),
             audience=auth_config.get("audience"),
             issuer=auth_config.get("issuer")
         )
+        self.tokenizer.set_prefix(auth_config.get("jwt_header_prefix"))
+        self.tokenizer.validity_period(auth_config.get("jwt_token_exp"))
 
         self.refresher = Jwt(
             secret_key=auth_config.get("secret_key"),
             algorithm=auth_config.get("algorithm"),
-            token_header_prefix=auth_config.get("jwt_refresh_header_prefix"),
-            leeway=auth_config.get("leeway"),
-            expiration_delta=auth_config.get("jwt_refresh_exp"),
             audience=auth_config.get("audience"),
             issuer=auth_config.get("issuer")
         )
+        self.refresher.set_prefix(auth_config.get("jwt_refresh_header_prefix"))
+        self.refresher.validity_period(auth_config.get("jwt_refresh_exp"))
 
     def _get_auth_header(self, auth_header, prefix):
         parts = auth_header.split()
