@@ -142,21 +142,20 @@ class Jwt(Tacen):
 
         return parts[1]
 
-    def verify_token(self, token, options={}):
+    def verify_token(self, token, options=None):
         """Decode jwt token payload."""
 
-        options = \
-            dict(('verify_' + claim, True) for claim in self.verify_claims)
+        opts = dict(('verify_' + claim, True) for claim in self.verify_claims)
 
-        options.update(
+        opts.update(
             dict(('require_' + claim, True) for claim in self.required_claims)
         )
-
-        options.update(options)
+        if isinstance(options, dict):
+            opts.update(options)
 
         try:
             payload = jwt.decode(token, key=self.secret_key,
-                                 options=options,
+                                 options=opts,
                                  algorithms=[self.algorithm],
                                  issuer=self.issuer,
                                  audience=self.audience)
@@ -168,7 +167,7 @@ class Jwt(Tacen):
 
         return payload
 
-    def unload(self, token, options={}):
+    def unload(self, token, options=None):
         """Unload jwt token value."""
         payload = self.verify_token(token, options)
         token_value = payload.get("data", None)
