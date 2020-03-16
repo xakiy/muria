@@ -13,7 +13,7 @@ Policy_Config = {
     # group context
     "responsibilities": {
         "manager": ["administrator", "staff"],
-        "user": ["@any-roles"],
+        "user": ["@any-role"],
         "journalist": ["contributor", "staff"],
     },
     # resource routes

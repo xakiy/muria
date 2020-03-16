@@ -2,12 +2,11 @@ import falcon
 
 from pony.orm import db_session
 from muria.db import User
-from falcon_policy import RoleBasedPolicy
-from falcon_policy.config import PolicyConfig
-from falcon_policy.policy import PolicyManager
+from .config import PolicyConfig
+from .manager import PolicyManager
 
 
-class RBAC(RoleBasedPolicy):
+class RBAC:
     # NOTE:
     # It requires jwt_checker middleware declared before itself
     # in order to work.
