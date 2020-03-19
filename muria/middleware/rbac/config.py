@@ -8,7 +8,7 @@ class PolicyConfig(UserDict):
 
     @property
     def responsibilities(self):
-        return self.data.get('groups', {})
+        return self.data.get('responsibilities', {})
 
     @property
     def routes(self):

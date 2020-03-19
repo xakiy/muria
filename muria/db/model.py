@@ -142,6 +142,7 @@ def define_entities(db):
         user = Set("User")
 
     class Role(db.Entity):
-        name = PrimaryKey(str)
+        id = PrimaryKey(int, auto=True)
+        name = Required(str)
         info = Optional(str)
-        context = Required("Responsibility")
+        contexts = Set("Responsibility")

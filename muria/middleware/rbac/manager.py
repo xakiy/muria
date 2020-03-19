@@ -15,12 +15,12 @@ class PolicyManager(object):
             if item in self.config.responsibilities
         ]
 
-        group_roles = itertools.chain.from_iterable([
+        responsibilities = itertools.chain.from_iterable([
             self.config.responsibilities[item] for item in to_expand
         ])
 
         roles = set(policy) - set(to_expand)
-        authorized_roles = roles.union(set(group_roles))
+        authorized_roles = roles.union(set(responsibilities))
 
         return authorized_roles
 
