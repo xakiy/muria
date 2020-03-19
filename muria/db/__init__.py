@@ -1,5 +1,5 @@
 from muria import config
-from .setup import connect
+from .init import connect
 
 
 connection = connect(config)
