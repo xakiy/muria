@@ -9,7 +9,7 @@ from pony.orm import (
 )
 from pony.orm.dbapiprovider import OperationalError
 from muria.db.model import define_entities
-tables = []  # no preload data
+from .preload import tables, sets
 
 
 def get_params(config):
@@ -91,15 +91,28 @@ def bind(connection, params):
 
 
 @db_session
-def _preload_data():
+def _preload_data(connection):
     # populate preload data if not exist
-    if tables is not []:
-        for table in tables:
-            for row in table['data']:
-                model = getattr(sys.modules[__name__], table['model'])
-                if not model.exists(**row):
-                    model(**row)
-        flush()
+    if len(tables) == 0:
+        return
+    for table in tables:
+        for row in table['data']:
+            model = getattr(connection, table['model'])
+            if not model.exists(**row):
+                model(**row)
+    flush()
+    if len(sets) == 0:
+        return
+    for subset in sets:
+            for item in subset['data']:
+                parent_model = getattr(connection, subset['parent'])
+                child_model = getattr(connection, subset['child'])
+                parent = parent_model.get(id=item[0])
+                child = child_model.get(id=item[1])
+                relation = getattr(parent, subset['rel'])
+                relation.add(child)
+
+    flush()
 
 
 def connect(config):
@@ -122,6 +135,6 @@ def connect(config):
 
     # map tables to entities
     connection.generate_mapping(create_tables=config.getboolean("db_create_tables", True))
-    _preload_data()
+    _preload_data(connection)
 
     return connection

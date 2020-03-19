@@ -29,10 +29,10 @@ class PolicyManager(object):
             self.policies[route][method.upper()] = self.expand_policy(policy)
 
     def check_roles(self, provided_roles, policy):
-        authorized_list = policy
+        authorized_roles = policy
 
         if '@any-role' in policy:
-            authorized_list = self.config.roles
+            authorized_roles = self.config.roles
 
         elif '@passthrough' in policy:
             return next(iter(provided_roles))
@@ -40,5 +40,5 @@ class PolicyManager(object):
         for provided in provided_roles:
             role = provided.strip()
 
-            if role in authorized_list:
+            if role in authorized_roles:
                 return role

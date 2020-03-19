@@ -1,5 +1,6 @@
 """muria access policy config file."""
 
+# role is associated directly with user as many to many relationship
 roles = [
     "administrator",
     "contributor",
@@ -9,7 +10,17 @@ roles = [
     "student",
 ]
 
-polices = {
+# responsibilities is related to policy defined in each route.
+# it groups roles into specific responsibilities, or we may say
+# responsibilities is list of allowed_roles.
+responsibilities = {
+    "manager": ["administrator", "staff"],
+    "user": roles,
+    "journalist": ["contributor", "staff", "student"],
+}
+
+# every method contains responsibilities associated with it
+routes = {
     "/v1/ping": {
         "OPTIONS": ["@passthrough"],
         "GET": ["user"]
@@ -52,11 +63,7 @@ Policy_Config = {
     # responsibility roles
     "roles": roles,
     # group context
-    "responsibilities": {
-        "management": ["administrator", "staff"],
-        "user": roles,
-        "journalist": ["contributor", "staff"],
-    },
+    "responsibilities": responsibilities,
     # resource routes
-    "routes": polices,
+    "routes": routes,
 }

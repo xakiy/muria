@@ -4,7 +4,7 @@ import pytest
 from falcon import testing
 from muria import config
 from muria.wsgi import app
-from muria.db import User
+from muria.db import User, Role
 from pony.orm import db_session
 
 
@@ -26,10 +26,8 @@ def properties(request):
     request.cls.headers = headers
 
     password_string = "supersecret"
-    hashed, salt = (
-        '0d2f943bf584cc8d2181bb6678c6a8cdd459e43b231720f4a69b735d07e50910',
-        '56d7a4c162c754262f90f345ac67c1841c715b3c'
-    )
+
+    role = Role.get(name="administrator")
 
     user_data = {
         "id": "ed05547a-a6be-436f-9f8b-946dee956191",
@@ -41,8 +39,8 @@ def properties(request):
         "situs": "https://somesite.com",
         "email": "rijalul.ghad@gmail.com",
         "password": password_string,
-        "salt": '',
         "suspended": False,
+        "roles": role,
     }
 
     request.cls.user = User.get(id=user_data["id"]) \

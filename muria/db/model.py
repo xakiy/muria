@@ -34,7 +34,7 @@ def define_entities(db):
         password = Required(str)
         salt = Optional(str)
         suspended = Required(bool, default=False)
-        responsibilities = Set("Responsibility")
+        roles = Set("Role")
         tokens = Set("BaseToken")
 
         def get_user_id(self):
@@ -75,8 +75,9 @@ def define_entities(db):
         def before_insert(self):
             self.salt, self.password = self.create_salted_password(self.password)
 
-        def get_responsibilities(self):
-            return self.responsibilities
+        def get_roles(self):
+            # self.responsibilities
+            return [role.name for role in self.roles]
 
     class BaseToken(db.Entity):
         _discriminator_ = "base"
@@ -134,15 +135,15 @@ def define_entities(db):
         access_key = Required(str, 43, unique=True, index=True)
         refresh_key = Optional(str, 43, unique=True, index=True)
 
-    class Responsibility(db.Entity):
-        id = PrimaryKey(int, auto=True)
-        name = Required(str, unique=True)
-        info = Optional(str, nullable=True)
-        roles = Set("Role")
-        user = Set("User")
-
     class Role(db.Entity):
         id = PrimaryKey(int, auto=True)
         name = Required(str)
         info = Optional(str)
         contexts = Set("Responsibility")
+        users = Set("User")
+
+    class Responsibility(db.Entity):
+        id = PrimaryKey(int, auto=True)
+        name = Required(str, unique=True)
+        info = Optional(str, nullable=True)
+        roles = Set("Role")
