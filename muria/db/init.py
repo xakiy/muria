@@ -110,7 +110,8 @@ def _preload_data(connection):
                 parent = parent_model.get(id=item[0])
                 child = child_model.get(id=item[1])
                 relation = getattr(parent, subset['rel'])
-                relation.add(child)
+                if child not in relation:
+                    relation.add(child)
 
     flush()
 
