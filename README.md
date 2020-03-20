@@ -5,42 +5,61 @@ Muria
 
 Falcon boilerplate for API development with pony ORM
 
+Fitur
+-----
+Via (built-in) modified middlewares
+* Strict HTTPS (based on https://github.com/falconry/falcon-require-https)
+* CORS (based on https://github.com/lwcolton/falcon-cors)
+* Authentication with JWT (based on https://github.com/loanzen/falcon-auth)
+* Authorization with RBAC (Depends on JWT Auth, based on https://github.com/falconry/falcon-policy)
+* Basic 12 factor configuration
+
+Fitur Lain
+----------
+* Database storage(Postgres, MySQL/MariaDB, SQLite) using Pony ORM
+* Simple memcache support
+* Heroku deployment ready
+
 Instalasi
 ---------
-Silahkan duplikat repo ini
+Silahkan duplikat repo ini dari
 ```
 $git clone https://github.com/xakiy/muria.git
 ```
 
-Install package dependensinya
-- silahkan buat python environment bila belum ada, bisa dengan virtualenv, atau pyenv
+Install `paket-paket` pendukungnya.
+Dianjurkan membuat python environment terlebih dahulu, baik dengan virtualenv,
+atau pyenv.
 ```
 $pip install -r requirements-dev.txt
 ```
-Siapkan `file` konfigurasi baru yang bisa Anda contek dari `tests/settings.ini`,
-ubah dan sesuaikan menurut kebutuhan. Caranya, pilih salah satu `section`, yaitu
-bagian yang ada dalam kurung kotak, seperti `[TEST], [POSGRESQL] atau [MYSQL]`,
-atau Anda bisa membuat `section` yang baru.
+
+Aplikasi ini diatur melalui sebuah `file` konfigurasi yang bisa Anda contek dari
+`tests/settings.ini`, ubah dan sesuaikan menurut kebutuhan. Caranya, pilih salah
+satu `section`, yaitu bagian yang ada dalam kurung kotak, seperti `[TEST],
+[POSGRESQL] atau [MYSQL]`, atau Anda bisa membuat `section` yang baru.
 
 Atur paramater-parameter yang Anda butuhkan dan letakkan di bawah `section` yang
-akan Anda gunakan. Seperti, bila Anda memiliki parameter berbeda untuk `cache_provider`
-bisa Anda pindahkan ke bawah `section` yang baru Anda buat, begitu juga untuk parameter-
-parameter lainnya.
+akan Anda gunakan. Seperti, bila Anda memiliki parameter berbeda untuk
+`cache_provider` bisa Anda letakkan ke bawah `section` yang baru tersebut,
+begitu juga untuk parameter-parameter lainnya.
 
-Bila sudah selesai, simpan `file` konfigurasi tersebut di tempat yang Anda kehendaki.
-
-Setelah itu, export lokasi `file` konfigurasi tadi ke dalam variabel
-`MURIA_CONFIG`, dan `section`-nya ke dalam variabel `MURIA_MODE`, seperti:
+Simpan `file` konfigurasi tersebut di tempat yang Anda kehendaki,
+dan export `file path`-nya ke dalam variabel `MURIA_CONFIG`,
+dan `section`-nya ke dalam variabel `MURIA_MODE`, seperti:
 ```
 $export MURIA_CONFIG=/home/user/api.konfigurasi.ini
 $export MURIA_MODE=MYSQL  # sesuaikan dengan section yang Anda buat tadi
 ```
 
-Kemudian Anda bisa menjalankan aplikasinya dengan perintah:
+Terakhir Anda bisa menjalankannya dengan perintah:
 ```
 $gunicorn --reload muria.wsgi:app
 ```
 
 Kontribusi
 ----------
-Aplikasi masih dalam pengembangan intensif, bila Anda berminat untuk berkontribusi silahkan ajukan PR dan siapkan test terkait PR Anda.
+Aplikasi masih dalam pengembangan intensif, bila Anda berminat untuk
+berkontribusi silahkan ajukan PR dan siapkan test terkait PR Anda.
+Terima kasih.
+
