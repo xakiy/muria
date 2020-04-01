@@ -4,6 +4,7 @@ import pytest
 import base64
 from muria import config
 from urllib import parse
+from pathlib import Path
 from muria.util.misc import generate_chars
 from falcon import (
     HTTP_BAD_REQUEST,
@@ -16,8 +17,9 @@ from falcon import (
 
 @pytest.fixture(scope="class")
 def url(request):
-    request.cls.url = os.path.join("/", config.get("api_version"),
-                                   config.get("api_auth_path", "auth"))
+    request.cls.url = Path(
+        "/", config.get("api_version"), config.get("api_auth_path", "auth")
+    ).as_posix()
 
 
 @pytest.mark.usefixtures("client", "url")
