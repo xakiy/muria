@@ -65,7 +65,7 @@ class TestAuth:
         # should get UNPROCESSABLE_ENTITY
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
         assert resp.json.get("description") == \
-            "{'password': ['Length must be between 8 and 40.']}"
+            {'password': ['Length must be between 8 and 40.']}
 
     def test_scrambled_password(self, client):
         # test with scrambled password with exact same length

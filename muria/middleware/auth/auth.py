@@ -130,7 +130,7 @@ class Auth(object):
             raise HTTPUnprocessableEntity(
                 code=88810,  # unprocessable creds either blank or invalid
                 title="Authentication Failure",
-                description=str(errors)
+                description=errors
             )
 
         user = User.authenticate(username=username, password=password)
