@@ -13,5 +13,6 @@ psycopg2cffi==2.8.1; implementation_name=='pypy'
 pymemcache==3.0.0
 python-jose==3.1.0
 python-magic==0.4.15
+python-magic-bin==0.4.14; platform_system=='Windows'
 PyMySQL==0.9.3
 python-rapidjson==0.9.1
