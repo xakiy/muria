@@ -6,7 +6,8 @@ from pony.orm import db_session
 from muria.db import User, JwtToken
 from muria.db.schema import Credentials
 from datetime import datetime
-from os import environ, urandom, path
+from os import environ, urandom
+from pathlib import Path
 import base64
 from falcon import (
     HTTP_OK,
@@ -59,8 +60,8 @@ class Auth(object):
         if not auth_config["route_path"]:
             auth_config["route_path"] = "auth"
 
-        self.path = path.join("/", auth_config["route_basepath"],
-                              auth_config["route_path"])
+        self.path = Path("/", auth_config["route_basepath"],
+                              auth_config["route_path"]).as_posix()
 
         self.exempt_routes = auth_config["exempt_routes"] or []
         self.exempt_methods = auth_config["exempt_methods"] or ['OPTIONS']

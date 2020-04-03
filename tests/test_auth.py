@@ -447,7 +447,7 @@ class TestAuth:
         assert resp.status == HTTP_UNAUTHORIZED
 
         resp = client.simulate_get(
-            path=os.path.join("/", config.get("api_version"), "ping"),
+            path=Path("/", config.get("api_version"), "ping").as_posix(),
             headers=self.headers,
             protocol=self.scheme
         )
