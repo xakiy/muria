@@ -1,5 +1,5 @@
 """Authentication Test."""
-import os
+
 import pytest
 import base64
 from muria import config
