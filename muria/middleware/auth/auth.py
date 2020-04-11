@@ -18,22 +18,13 @@ from falcon import (
 )
 
 
-def default_secret_key(size=32):
-    try:
-        key = environ["AUTH_TOKEN_KEY"]
-    except KeyError:
-        key = environ["AUTH_TOKEN_KEY"] = urandom(int(size)).hex()
-    finally:
-        return key
-
-
 class Auth(object):
 
     def __init__(self, **auth_config):
         default_auth_config = {
             "route_basepath": "v1",
             "route_path": "auth",
-            "secret_key": default_secret_key(32),
+            "secret_key": None,
             "algorithm": "HS256",
             "jwt_header_prefix": "jwt",
             "jwt_refresh_header_prefix": "ref",
@@ -57,11 +48,24 @@ class Auth(object):
                 "Unknown Auth settings: {0}".format(unknown_settings)
             )
 
+        if not auth_config["secret_key"]:
+            # check for env variable first
+            try:
+                maybe_key = str(environ["AUTH_SECRET_KEY"])
+                path_to_key = Path(maybe_key)
+                if path_to_key.is_file():
+                    auth_config["secret_key"] = path_to_key.read_text()
+                else:
+                    auth_config["secret_key"] = maybe_key
+            except Exception:
+                raise EnvironmentError('No `AUTH_SECRET_KEY` provided!')
+
         if not auth_config["route_path"]:
             auth_config["route_path"] = "auth"
 
-        self.path = Path("/", auth_config["route_basepath"],
-                              auth_config["route_path"]).as_posix()
+        self.path = Path(
+            "/", auth_config["route_basepath"],
+            auth_config["route_path"]).as_posix()
 
         self.exempt_routes = auth_config["exempt_routes"] or []
         self.exempt_methods = auth_config["exempt_methods"] or ['OPTIONS']
