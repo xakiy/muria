@@ -4,7 +4,7 @@ import falcon
 from falcon import testing
 from freezegun import freeze_time
 
-from falconratelimit import rate_limit
+from muria.middleware.ratelimit import rate_limit
 
 
 class NoRedisResource(object):
