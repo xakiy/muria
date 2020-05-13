@@ -5,7 +5,7 @@ from .middleware import AuthMiddleware
 from pony.orm import db_session
 from muria.db import User, JwtToken
 from muria.db.schema import Credentials
-from datetime import datetime
+from muria.util import get_timestamp
 from os import environ, urandom
 from pathlib import Path
 import base64
@@ -146,7 +146,7 @@ class Auth(object):
                 description="Invalid credentials"
             )
         # generate token along with its refresh token
-        now = datetime.utcnow().timestamp()
+        now = get_timestamp()
         data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
         token = self.tokenizer.create_token(data)
         signature = {"signature": self._get_token_key(token)}
@@ -203,7 +203,7 @@ class Auth(object):
 
             try:
                 if old_refresh_payload["signature"] == old_token.split(".")[2]:
-                    now = datetime.utcnow().timestamp()
+                    now = get_timestamp()
                     old_token_payload.update({"rand": urandom(3).hex()})
                     user = User.get(id=old_token_payload["id"])
                     token = self.tokenizer.create_token(old_token_payload)
@@ -246,7 +246,7 @@ class Auth(object):
         jwt = JwtToken.get(access_key=self._get_token_key(token))
         if jwt and jwt.revoked is False:
             jwt.revoked = True
-            expiry = jwt.get_expires_at() - datetime.utcnow().timestamp()
+            expiry = jwt.get_expires_at() - get_timestamp()
             self._cache_revoked_token(token, expiry)
             return True
         else:
