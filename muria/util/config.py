@@ -91,12 +91,16 @@ class _Configuration(SafeConfigParser):
 
     def _directory_init(self):
         # Directories initialization
+        # NOTE: 0o004 or world readable is only make sense if you serve file directly to
+        # the world.
+        # So does these folders need no executable bit set.
         permissions = {
             "dir_doc": 0o766,
             "dir_image": 0o766,
-            "dir_temp": 0o776
+            "dir_temp": 0o766
         }
-        default_mode = 0o764
+        # set to 0o750 for server need to execute the script
+        default_mode = 0o750
         dirs = [k for k in self[self.api_mode].keys() if k.startswith('dir_')]
         for path in dirs:
             if path not in ('dir_app'):
