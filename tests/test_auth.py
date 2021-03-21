@@ -1,9 +1,10 @@
 """Authentication Test."""
-import os
+
 import pytest
 import base64
 from muria import config
 from urllib import parse
+from pathlib import Path
 from muria.util.misc import generate_chars
 from falcon import (
     HTTP_BAD_REQUEST,
@@ -16,8 +17,9 @@ from falcon import (
 
 @pytest.fixture(scope="class")
 def url(request):
-    request.cls.url = os.path.join("/", config.get("api_version"),
-                                   config.get("api_auth_path", "auth"))
+    request.cls.url = Path(
+        "/", config.get("api_version"), config.get("api_auth_path", "auth")
+    ).as_posix()
 
 
 @pytest.mark.usefixtures("client", "url")
@@ -65,7 +67,7 @@ class TestAuth:
         # should get UNPROCESSABLE_ENTITY
         assert resp.status == HTTP_UNPROCESSABLE_ENTITY
         assert resp.json.get("description") == \
-            "{'password': ['Length must be between 8 and 40.']}"
+            {'password': ['Length must be between 8 and 40.']}
 
     def test_scrambled_password(self, client):
         # test with scrambled password with exact same length
@@ -445,7 +447,7 @@ class TestAuth:
         assert resp.status == HTTP_UNAUTHORIZED
 
         resp = client.simulate_get(
-            path=os.path.join("/", config.get("api_version"), "ping"),
+            path=Path("/", config.get("api_version"), "ping").as_posix(),
             headers=self.headers,
             protocol=self.scheme
         )

@@ -5,8 +5,9 @@ from .middleware import AuthMiddleware
 from pony.orm import db_session
 from muria.db import User, JwtToken
 from muria.db.schema import Credentials
-from datetime import datetime
-from os import environ, urandom, path
+from muria.util import get_timestamp
+from os import environ, urandom
+from pathlib import Path
 import base64
 from falcon import (
     HTTP_OK,
@@ -17,22 +18,13 @@ from falcon import (
 )
 
 
-def default_secret_key(size=32):
-    try:
-        key = environ["AUTH_TOKEN_KEY"]
-    except KeyError:
-        key = environ["AUTH_TOKEN_KEY"] = urandom(int(size)).hex()
-    finally:
-        return key
-
-
 class Auth(object):
 
     def __init__(self, **auth_config):
         default_auth_config = {
             "route_basepath": "v1",
             "route_path": "auth",
-            "secret_key": default_secret_key(32),
+            "secret_key": None,
             "algorithm": "HS256",
             "jwt_header_prefix": "jwt",
             "jwt_refresh_header_prefix": "ref",
@@ -56,11 +48,24 @@ class Auth(object):
                 "Unknown Auth settings: {0}".format(unknown_settings)
             )
 
+        if not auth_config["secret_key"]:
+            # check for env variable first
+            try:
+                maybe_key = str(environ["AUTH_SECRET_KEY"])
+                path_to_key = Path(maybe_key)
+                if path_to_key.is_file():
+                    auth_config["secret_key"] = path_to_key.read_text()
+                else:
+                    auth_config["secret_key"] = maybe_key
+            except Exception:
+                raise EnvironmentError('No `AUTH_SECRET_KEY` provided!')
+
         if not auth_config["route_path"]:
             auth_config["route_path"] = "auth"
 
-        self.path = path.join("/", auth_config["route_basepath"],
-                              auth_config["route_path"])
+        self.path = Path(
+            "/", auth_config["route_basepath"],
+            auth_config["route_path"]).as_posix()
 
         self.exempt_routes = auth_config["exempt_routes"] or []
         self.exempt_methods = auth_config["exempt_methods"] or ['OPTIONS']
@@ -130,7 +135,7 @@ class Auth(object):
             raise HTTPUnprocessableEntity(
                 code=88810,  # unprocessable creds either blank or invalid
                 title="Authentication Failure",
-                description=str(errors)
+                description=errors
             )
 
         user = User.authenticate(username=username, password=password)
@@ -141,7 +146,7 @@ class Auth(object):
                 description="Invalid credentials"
             )
         # generate token along with its refresh token
-        now = datetime.utcnow().timestamp()
+        now = get_timestamp()
         data = {"id": user.get_user_id(), "rand": urandom(3).hex()}
         token = self.tokenizer.create_token(data)
         signature = {"signature": self._get_token_key(token)}
@@ -198,7 +203,7 @@ class Auth(object):
 
             try:
                 if old_refresh_payload["signature"] == old_token.split(".")[2]:
-                    now = datetime.utcnow().timestamp()
+                    now = get_timestamp()
                     old_token_payload.update({"rand": urandom(3).hex()})
                     user = User.get(id=old_token_payload["id"])
                     token = self.tokenizer.create_token(old_token_payload)
@@ -241,7 +246,7 @@ class Auth(object):
         jwt = JwtToken.get(access_key=self._get_token_key(token))
         if jwt and jwt.revoked is False:
             jwt.revoked = True
-            expiry = jwt.get_expires_at() - datetime.utcnow().timestamp()
+            expiry = jwt.get_expires_at() - get_timestamp()
             self._cache_revoked_token(token, expiry)
             return True
         else:

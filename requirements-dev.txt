@@ -1,6 +1,7 @@
 -r requirements.txt
 
 coverage==4.5.4
+freezegun==1.1.0
 gunicorn==20.0.4
 httpie==1.0.3
 pytest==4.6.5

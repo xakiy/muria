@@ -3,7 +3,8 @@ import uuid
 import hashlib
 import binascii
 from os import urandom
-from datetime import date, datetime
+from datetime import date
+from muria.util import get_timestamp
 from .mixin import EntityMixin
 from pony.orm import (
     PrimaryKey,
@@ -86,7 +87,7 @@ def define_entities(db):
         access_token = Required(LongStr)
         refresh_token = Optional(LongStr)
         revoked = Required(bool, default=False)
-        issued_at = Optional(float, default=datetime.utcnow().timestamp)
+        issued_at = Optional(float, default=get_timestamp)
         expires_in = Optional(int, default=300)
         refresh_expires_in = Optional(int, default=300 * 15)
         scope = Optional(str, default="")
