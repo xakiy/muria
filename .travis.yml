@@ -16,11 +16,10 @@ env:
   - MURIA_MODE=POSTGRESQL
 
 python:
-  - "3.5"
   - "3.6"
   - "3.7"
   - "pypy3"
-  
+
 branches:
   only:
     - master

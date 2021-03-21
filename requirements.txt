@@ -8,12 +8,12 @@ falcon-require-https==0.1.0
 gunicorn==20.0.4
 marshmallow==3.3.0
 Pillow==8.1.2
-pony==0.7.12
+pony==0.7.14
 psycopg2-binary==2.8.4; implementation_name=='cpython'
 psycopg2cffi==2.8.1; implementation_name=='pypy'
 pymemcache==3.0.0
 python-jose==3.1.0
 python-magic==0.4.15
 python-magic-bin==0.4.14; platform_system=='Windows'
-PyMySQL==0.9.3
+PyMySQL==1.0.2
 python-rapidjson==1.0
