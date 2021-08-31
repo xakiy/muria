@@ -7,7 +7,7 @@ falcon-ratelimit==1.1
 falcon-require-https==0.1.0
 gunicorn==20.0.4
 marshmallow==3.3.0
-Pillow==8.1.2
+Pillow==8.3.1
 pony==0.7.14
 psycopg2-binary==2.8.4; implementation_name=='cpython'
 psycopg2cffi==2.8.1; implementation_name=='pypy'
