@@ -11,7 +11,7 @@ from falcon_cors.middleware import CORSMiddleware
 from falcon_cors.log import get_default_logger
 
 
-class HTTPErrorNoRep(falcon.NoRepresentation, falcon.HTTPError):
+class HTTPErrorNoRep(falcon.HTTPError):
     pass
 
 
