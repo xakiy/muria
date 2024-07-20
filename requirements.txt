@@ -15,5 +15,5 @@ pymemcache==3.0.0
 python-jose==3.1.0
 python-magic==0.4.15
 python-magic-bin==0.4.14; platform_system=='Windows'
-PyMySQL==1.0.2
+PyMySQL==1.1.1
 python-rapidjson==1.0
