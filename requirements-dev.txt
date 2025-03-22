@@ -2,6 +2,6 @@
 
 coverage==4.5.4
 freezegun==1.1.0
-gunicorn==22.0.0
+gunicorn==23.0.0
 httpie<=3.2.3
 pytest==4.6.5
